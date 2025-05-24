@@ -67,8 +67,10 @@ export default async function AdminDashboardPage() {
     if (!session?.user) {
         redirect("/login");
     }
-    if (session.user.role === "patient") {
-        redirect("/dashboard/patient");
+    const role = session.user.role;
+    const currentPath = "/dashboard/" + role;
+    if (!window.location.pathname.startsWith(currentPath)) {
+        redirect(currentPath);
     }
 
     return (
