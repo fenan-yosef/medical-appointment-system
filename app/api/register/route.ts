@@ -4,11 +4,23 @@ import User from "@/models/User"
 
 export async function POST(req: NextRequest) {
     try {
-        const { firstName, lastName, email, password, gender, role } = await req.json()
+        const { 
+            firstName, 
+            lastName, 
+            email, 
+            password, 
+            gender, 
+            role,
+            phoneNumber,
+            address, // { street, city, state, zipCode, country }
+            dateOfBirth, // string, will be converted to Date
+            emergencyContact, // { name, relationship, phoneNumber }
+            insurance // { provider, policyNumber, expiryDate }
+        } = await req.json()
 
         // Validate input
-        if (!firstName || !lastName || !email || !password) {
-            return NextResponse.json({ message: "Missing required fields" }, { status: 400 })
+        if (!firstName || !lastName || !email || !password || !dateOfBirth) {
+            return NextResponse.json({ message: "Missing required fields (firstName, lastName, email, password, dateOfBirth are mandatory)" }, { status: 400 })
         }
 
         // Connect to database
@@ -28,6 +40,11 @@ export async function POST(req: NextRequest) {
             password, // Will be hashed by the pre-save hook
             gender,
             role: role || "patient", // Default to patient if no role provided
+            phoneNumber,
+            address,
+            dateOfBirth: new Date(dateOfBirth),
+            emergencyContact,
+            insurance,
         })
 
         // Remove password from response
