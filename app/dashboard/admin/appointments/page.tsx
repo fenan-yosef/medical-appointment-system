@@ -30,6 +30,7 @@ import {
 } from "@/components/ui/dialog";
 import { useToast } from "@/components/ui/use-toast";
 import { ChevronLeft, ChevronRight, Eye, Edit, Trash2, CalendarIcon, Search, XCircle } from "lucide-react";
+import { Label } from "@/components/ui/label";
 // Assuming a DatePicker component might exist or can be added later
 // For now, using Input type="date"
 
@@ -68,7 +69,7 @@ export default function AdminAppointmentsPage() {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [doctors, setDoctors] = useState<Doctor[]>([]);
-  
+
   // Loading and error states
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -119,7 +120,7 @@ export default function AdminAppointmentsPage() {
       if (filters.status) params.append("status", filters.status);
       // Note: patientName filter would need backend support if it's more than a simple text match on returned results
       // For now, patientName filter is not directly sent to backend, can be implemented client-side or needs specific API
-      
+
       // Sorting
       params.append("sortBy", sorting.sortBy);
       params.append("order", sorting.order);
@@ -174,7 +175,7 @@ export default function AdminAppointmentsPage() {
           toast({ title: "Warning", description: "Could not load doctors for filtering.", variant: "default" });
         }
       } catch (err) {
-        toast({ title: "Error", description: "Failed to load filter options.", variant: "destructive"});
+        toast({ title: "Error", description: "Failed to load filter options.", variant: "destructive" });
       } finally {
         setIsLoadingFilters(false);
       }
@@ -187,7 +188,7 @@ export default function AdminAppointmentsPage() {
     setFilters(prev => ({ ...prev, [name]: value }));
     setPagination(prev => ({ ...prev, currentPage: 1 })); // Reset to first page on filter change
   };
-  
+
   const handleSelectFilterChange = (name: string, value: string) => {
     setFilters(prev => ({ ...prev, [name]: value }));
     setPagination(prev => ({ ...prev, currentPage: 1 }));
@@ -206,7 +207,7 @@ export default function AdminAppointmentsPage() {
       setPagination(prev => ({ ...prev, currentPage: newPage }));
     }
   };
-  
+
   const openViewModal = (appointment: Appointment) => {
     setSelectedAppointment(appointment);
     setIsViewModalOpen(true);
@@ -214,21 +215,28 @@ export default function AdminAppointmentsPage() {
 
   const openEditModal = (appointment: Appointment) => {
     setSelectedAppointment(appointment);
-    setEditFormData({ 
-        ...appointment, 
-        date: appointment.date ? new Date(appointment.date).toISOString().split('T')[0] : "", // Format for input type="date"
-        // doctor and patient and department are IDs, so should be fine
+    setEditFormData({
+      ...appointment,
+      date: appointment.date ? new Date(appointment.date).toISOString().split('T')[0] : "", // Format for input type="date"
+      // doctor and patient and department are IDs, so should be fine
     });
     setIsEditModalOpen(true);
   };
-  
+
+  // Fix: handleEditFormChange for time fields (ensure time is always an object with string values)
   const handleEditFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     if (name === "time.start" || name === "time.end") {
-        const timeField = name.split('.')[1];
-        setEditFormData(prev => ({ ...prev, time: { ...prev.time, [timeField]: value } }));
+      const timeField = name.split('.')[1];
+      setEditFormData(prev => ({
+        ...prev,
+        time: {
+          start: timeField === "start" ? value : prev.time?.start || "",
+          end: timeField === "end" ? value : prev.time?.end || "",
+        }
+      }));
     } else {
-        setEditFormData(prev => ({ ...prev, [name]: value }));
+      setEditFormData(prev => ({ ...prev, [name]: value }));
     }
   };
 
@@ -237,23 +245,23 @@ export default function AdminAppointmentsPage() {
     if (!selectedAppointment) return;
     setIsLoading(true);
     try {
-        const response = await fetch(`/api/admin/appointments/${selectedAppointment._id}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(editFormData)
-        });
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.message || "Failed to update appointment");
-        }
-        toast({ title: "Success", description: "Appointment updated successfully." });
-        setIsEditModalOpen(false);
-        fetchAppointments(); // Refresh list
+      const response = await fetch(`/api/admin/appointments/${selectedAppointment._id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(editFormData)
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to update appointment");
+      }
+      toast({ title: "Success", description: "Appointment updated successfully." });
+      setIsEditModalOpen(false);
+      fetchAppointments(); // Refresh list
     } catch (err: any) {
-        setError(err.message);
-        toast({ title: "Error updating appointment", description: err.message, variant: "destructive" });
+      setError(err.message);
+      toast({ title: "Error updating appointment", description: err.message, variant: "destructive" });
     } finally {
-        setIsLoading(false);
+      setIsLoading(false);
     }
   };
 
@@ -266,29 +274,29 @@ export default function AdminAppointmentsPage() {
     if (!selectedAppointment) return;
     setIsLoading(true);
     try {
-        const response = await fetch(`/api/admin/appointments/${selectedAppointment._id}`, {
-            method: 'DELETE'
-        });
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.message || "Failed to cancel appointment");
-        }
-        toast({ title: "Success", description: "Appointment cancelled successfully." });
-        setIsCancelConfirmOpen(false);
-        fetchAppointments(); // Refresh list
+      const response = await fetch(`/api/admin/appointments/${selectedAppointment._id}`, {
+        method: 'DELETE'
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to cancel appointment");
+      }
+      toast({ title: "Success", description: "Appointment cancelled successfully." });
+      setIsCancelConfirmOpen(false);
+      fetchAppointments(); // Refresh list
     } catch (err: any) {
-        setError(err.message);
-        toast({ title: "Error cancelling appointment", description: err.message, variant: "destructive" });
+      setError(err.message);
+      toast({ title: "Error cancelling appointment", description: err.message, variant: "destructive" });
     } finally {
-        setIsLoading(false);
+      setIsLoading(false);
     }
   };
-  
+
   const filteredAppointments = useMemo(() => {
     if (!filters.patientName) return appointments;
-    return appointments.filter(app => 
-        `${app.patient.firstName} ${app.patient.lastName}`.toLowerCase().includes(filters.patientName.toLowerCase()) ||
-        app.patient._id.toLowerCase().includes(filters.patientName.toLowerCase())
+    return appointments.filter(app =>
+      `${app.patient.firstName} ${app.patient.lastName}`.toLowerCase().includes(filters.patientName.toLowerCase()) ||
+      app.patient._id.toLowerCase().includes(filters.patientName.toLowerCase())
     );
   }, [appointments, filters.patientName]);
 
@@ -302,17 +310,21 @@ export default function AdminAppointmentsPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 items-end">
           <div>
             <Label htmlFor="dateFrom">Date From</Label>
-            <Input type="date" id="dateFrom" name="dateFrom" value={filters.dateFrom} onChange={handleFilterChange} className="mt-1"/>
+            <Input type="date" id="dateFrom" name="dateFrom" value={filters.dateFrom} onChange={handleFilterChange} className="mt-1" />
           </div>
           <div>
             <Label htmlFor="dateTo">Date To</Label>
-            <Input type="date" id="dateTo" name="dateTo" value={filters.dateTo} onChange={handleFilterChange} className="mt-1"/>
+            <Input type="date" id="dateTo" name="dateTo" value={filters.dateTo} onChange={handleFilterChange} className="mt-1" />
           </div>
           <div>
             <Label htmlFor="departmentId">Department</Label>
             <Select name="departmentId" value={filters.departmentId} onValueChange={(value) => handleSelectFilterChange("departmentId", value)}>
-              <SelectTrigger id="departmentId" className="mt-1">
-                <SelectValue placeholder="All Departments" />
+              <SelectTrigger>
+                <SelectValue>
+                  {filters.departmentId
+                    ? departments.find(d => d._id === filters.departmentId)?.name
+                    : "All Departments"}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="">All Departments</SelectItem>
@@ -322,42 +334,64 @@ export default function AdminAppointmentsPage() {
           </div>
           <div>
             <Label htmlFor="doctorId">Doctor</Label>
-            <Select name="doctorId" value={filters.doctorId} onValueChange={(value) => handleSelectFilterChange("doctorId", value)} disabled={!filters.departmentId && doctors.length > 0 /* Enable if department not selected only if doctors list is not pre-filtered by department */}>
-              <SelectTrigger id="doctorId" className="mt-1">
-                <SelectValue placeholder="All Doctors" />
+            <Select
+              name="doctorId"
+              value={filters.doctorId}
+              onValueChange={(value) => handleSelectFilterChange("doctorId", value)}
+            // No filter by department, as Doctor type does not have department
+            >
+              <SelectTrigger>
+                <SelectValue>
+                  {filters.doctorId
+                    ? (() => {
+                      const doc = doctors.find(d => d._id === filters.doctorId);
+                      return doc ? `${doc.firstName} ${doc.lastName}` : "All Doctors";
+                    })()
+                    : "All Doctors"}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="">All Doctors</SelectItem>
-                {doctors
-                  .filter(doc => !filters.departmentId || (doc.department?._id === filters.departmentId)) // Basic client-side filter if API doesn't handle it
-                  .map(doc => <SelectItem key={doc._id} value={doc._id}>{doc.firstName} {doc.lastName}</SelectItem>)}
+                {doctors.map(doc => (
+                  <SelectItem key={doc._id} value={doc._id}>
+                    {doc.firstName} {doc.lastName}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
           <div>
             <Label htmlFor="patientName">Patient (Name/ID)</Label>
-            <Input type="text" id="patientName" name="patientName" value={filters.patientName} onChange={handleFilterChange} placeholder="Search Patient" className="mt-1"/>
+            <Input type="text" id="patientName" name="patientName" value={filters.patientName} onChange={handleFilterChange} placeholder="Search Patient" className="mt-1" />
           </div>
           <div>
             <Label htmlFor="status">Status</Label>
             <Select name="status" value={filters.status} onValueChange={(value) => handleSelectFilterChange("status", value)}>
-              <SelectTrigger id="status" className="mt-1">
-                <SelectValue placeholder="All Statuses" />
+              <SelectTrigger>
+                <SelectValue>
+                  {filters.status
+                    ? APPOINTMENT_STATUSES.find(s => s === filters.status)?.charAt(0).toUpperCase() + filters.status.slice(1)
+                    : "All Statuses"}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="">All Statuses</SelectItem>
-                {APPOINTMENT_STATUSES.map(status => <SelectItem key={status} value={status}>{status.charAt(0).toUpperCase() + status.slice(1)}</SelectItem>)}
+                {APPOINTMENT_STATUSES.map(status => (
+                  <SelectItem key={status} value={status}>
+                    {status.charAt(0).toUpperCase() + status.slice(1)}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
           <div className="flex items-end">
-             <Button onClick={() => fetchAppointments()} className="w-full md:w-auto">
-                <Search className="mr-2 h-4 w-4"/> Apply Filters
+            <Button onClick={() => fetchAppointments()} className="w-full md:w-auto">
+              <Search className="mr-2 h-4 w-4" /> Apply Filters
             </Button>
           </div>
         </div>
       </div>
-      
+
       {isLoading && <p className="text-center text-gray-600 py-4">Loading appointments...</p>}
       {error && <p className="text-center text-red-600 bg-red-100 p-3 rounded-md">{error}</p>}
 
@@ -387,14 +421,13 @@ export default function AdminAppointmentsPage() {
                     <TableCell>{new Date(app.date).toLocaleDateString()}</TableCell>
                     <TableCell>{app.time.start} - {app.time.end}</TableCell>
                     <TableCell>
-                        <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                            app.status === 'completed' ? 'bg-green-100 text-green-700' :
-                            app.status === 'scheduled' ? 'bg-blue-100 text-blue-700' :
-                            app.status === 'cancelled' ? 'bg-red-100 text-red-700' :
+                      <span className={`px-2 py-1 text-xs font-semibold rounded-full ${app.status === 'completed' ? 'bg-green-100 text-green-700' :
+                        app.status === 'scheduled' ? 'bg-blue-100 text-blue-700' :
+                          app.status === 'cancelled' ? 'bg-red-100 text-red-700' :
                             'bg-yellow-100 text-yellow-700' // pending
                         }`}>
-                            {app.status.charAt(0).toUpperCase() + app.status.slice(1)}
-                        </span>
+                        {app.status.charAt(0).toUpperCase() + app.status.slice(1)}
+                      </span>
                     </TableCell>
                     <TableCell className="space-x-1">
                       <Button variant="ghost" size="icon" onClick={() => openViewModal(app)} title="View">
@@ -427,7 +460,7 @@ export default function AdminAppointmentsPage() {
       {!isLoading && !error && appointments.length > 0 && (
         <div className="mt-6 flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
           <div className="text-sm text-gray-600">
-            Showing {Math.min(1 + (pagination.currentPage - 1) * pagination.limit, pagination.totalAppointments)} 
+            Showing {Math.min(1 + (pagination.currentPage - 1) * pagination.limit, pagination.totalAppointments)}
             to {Math.min(pagination.currentPage * pagination.limit, pagination.totalAppointments)} of {pagination.totalAppointments} appointments
           </div>
           <div className="flex items-center space-x-2">
@@ -437,7 +470,7 @@ export default function AdminAppointmentsPage() {
               disabled={pagination.currentPage === 1}
               size="sm"
             >
-              <ChevronLeft className="h-4 w-4 mr-1 md:mr-2"/> Previous
+              <ChevronLeft className="h-4 w-4 mr-1 md:mr-2" /> Previous
             </Button>
             {/* Consider adding page number inputs or more sophisticated page links */}
             <span className="text-sm p-2">Page {pagination.currentPage} of {pagination.totalPages}</span>
@@ -447,19 +480,21 @@ export default function AdminAppointmentsPage() {
               disabled={pagination.currentPage === pagination.totalPages}
               size="sm"
             >
-              Next <ChevronRight className="h-4 w-4 ml-1 md:ml-2"/>
+              Next <ChevronRight className="h-4 w-4 ml-1 md:ml-2" />
             </Button>
           </div>
           <div>
-            <Select value={pagination.limit.toString()} onValueChange={(value) => setPagination(p => ({...p, limit: parseInt(value), currentPage: 1}))}>
-                <SelectTrigger className="w-24">
-                    <SelectValue placeholder="Limit"/>
-                </SelectTrigger>
-                <SelectContent>
-                    <SelectItem value="10">10/page</SelectItem>
-                    <SelectItem value="20">20/page</SelectItem>
-                    <SelectItem value="50">50/page</SelectItem>
-                </SelectContent>
+            <Select value={pagination.limit.toString()} onValueChange={(value) => setPagination(p => ({ ...p, limit: parseInt(value), currentPage: 1 }))}>
+              <SelectTrigger>
+                <SelectValue>
+                  {pagination.limit}/page
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="10">10/page</SelectItem>
+                <SelectItem value="20">20/page</SelectItem>
+                <SelectItem value="50">50/page</SelectItem>
+              </SelectContent>
             </Select>
           </div>
         </div>
@@ -515,29 +550,100 @@ export default function AdminAppointmentsPage() {
               </div>
               <div>
                 <Label htmlFor="edit-departmentId">Department</Label>
-                <Select name="department" value={editFormData.department?._id || editFormData.department as string || ""} onValueChange={(value) => setEditFormData(prev => ({...prev, department: value}))}>
-                    <SelectTrigger><SelectValue placeholder="Select Department"/></SelectTrigger>
-                    <SelectContent>
-                        {departments.map(dept => <SelectItem key={dept._id} value={dept._id}>{dept.name}</SelectItem>)}
-                    </SelectContent>
+                <Select
+                  name="department"
+                  value={
+                    typeof editFormData.department === "string"
+                      ? editFormData.department
+                      : editFormData.department?._id || ""
+                  }
+                  onValueChange={value =>
+                    setEditFormData(prev => ({
+                      ...prev,
+                      department: departments.find(d => d._id === value) || { _id: value, name: "" },
+                    }))
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue>
+                      {(() => {
+                        const val =
+                          typeof editFormData.department === "string"
+                            ? editFormData.department
+                            : editFormData.department?._id;
+                        return val
+                          ? departments.find(d => d._id === val)?.name || "Select Department"
+                          : "Select Department";
+                      })()}
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {departments.map(dept => (
+                      <SelectItem key={dept._id} value={dept._id}>
+                        {dept.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
                 </Select>
               </div>
-               <div>
+              <div>
                 <Label htmlFor="edit-doctorId">Doctor</Label>
-                <Select name="doctor" value={editFormData.doctor?._id || editFormData.doctor as string || ""} onValueChange={(value) => setEditFormData(prev => ({...prev, doctor: value}))}>
-                    <SelectTrigger><SelectValue placeholder="Select Doctor"/></SelectTrigger>
-                    <SelectContent>
-                        {doctors.filter(doc => !editFormData.department || (doc.department?._id === (editFormData.department?._id || editFormData.department as string))).map(doc => <SelectItem key={doc._id} value={doc._id}>{doc.firstName} {doc.lastName}</SelectItem>)}
-                    </SelectContent>
+                <Select
+                  name="doctor"
+                  value={
+                    typeof editFormData.doctor === "string"
+                      ? editFormData.doctor
+                      : editFormData.doctor?._id || ""
+                  }
+                  onValueChange={value =>
+                    setEditFormData(prev => ({
+                      ...prev,
+                      doctor: doctors.find(d => d._id === value) || { _id: value, firstName: "", lastName: "" },
+                    }))
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue>
+                      {(() => {
+                        const val =
+                          typeof editFormData.doctor === "string"
+                            ? editFormData.doctor
+                            : editFormData.doctor?._id;
+                        return val
+                          ? (() => {
+                            const doc = doctors.find(d => d._id === val);
+                            return doc ? `${doc.firstName} ${doc.lastName}` : "Select Doctor";
+                          })()
+                          : "Select Doctor";
+                      })()}
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {doctors.map(doc => (
+                      <SelectItem key={doc._id} value={doc._id}>
+                        {doc.firstName} {doc.lastName}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
                 </Select>
               </div>
               <div>
                 <Label htmlFor="edit-status">Status</Label>
-                <Select name="status" value={editFormData.status || ""} onValueChange={(value) => setEditFormData(prev => ({...prev, status: value as Appointment["status"]}))}>
-                    <SelectTrigger><SelectValue placeholder="Select Status"/></SelectTrigger>
-                    <SelectContent>
-                        {APPOINTMENT_STATUSES.map(status => <SelectItem key={status} value={status}>{status.charAt(0).toUpperCase() + status.slice(1)}</SelectItem>)}
-                    </SelectContent>
+                <Select name="status" value={editFormData.status || ""} onValueChange={(value) => setEditFormData(prev => ({ ...prev, status: value as Appointment["status"] }))}>
+                  <SelectTrigger>
+                    <SelectValue>
+                      {editFormData.status
+                        ? APPOINTMENT_STATUSES.find(s => s === editFormData.status)?.charAt(0).toUpperCase() + (editFormData.status as string).slice(1)
+                        : "Select Status"}
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {APPOINTMENT_STATUSES.map(status => (
+                      <SelectItem key={status} value={status}>
+                        {status.charAt(0).toUpperCase() + status.slice(1)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
                 </Select>
               </div>
               <div>
@@ -546,11 +652,11 @@ export default function AdminAppointmentsPage() {
               </div>
               <div>
                 <Label htmlFor="edit-notes">Notes</Label>
-                <Textarea 
-                  id="edit-notes" 
-                  name="notes" 
-                  value={editFormData.notes || ""} 
-                  onChange={handleEditFormChange} 
+                <Textarea
+                  id="edit-notes"
+                  name="notes"
+                  value={editFormData.notes || ""}
+                  onChange={handleEditFormChange}
                   placeholder="Record any reasons for manual changes, rescheduling, or overrides here. This helps maintain a clear history of appointment adjustments."
                   rows={4} // Suggest a default size
                 />
@@ -577,10 +683,10 @@ export default function AdminAppointmentsPage() {
             </DialogDescription>
           </DialogHeader>
           {selectedAppointment && (
-             <div className="py-2 text-sm">
-                <p><strong>Patient:</strong> {selectedAppointment.patient.firstName} {selectedAppointment.patient.lastName}</p>
-                <p><strong>Date:</strong> {new Date(selectedAppointment.date).toLocaleDateString()} at {selectedAppointment.time.start}</p>
-             </div>
+            <div className="py-2 text-sm">
+              <p><strong>Patient:</strong> {selectedAppointment.patient.firstName} {selectedAppointment.patient.lastName}</p>
+              <p><strong>Date:</strong> {new Date(selectedAppointment.date).toLocaleDateString()} at {selectedAppointment.time.start}</p>
+            </div>
           )}
           <DialogFooter>
             <DialogClose asChild><Button variant="outline">No, keep it</Button></DialogClose>

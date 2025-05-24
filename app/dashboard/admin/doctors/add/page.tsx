@@ -84,11 +84,11 @@ export default function AddNewDoctorPage() {
   };
 
   const handleSelectChange = (name: string, value: string | boolean) => {
-     if (name === "isActive") {
-        setFormData((prev) => ({ ...prev, [name]: value === "true" || value === true }));
-     } else {
-        setFormData((prev) => ({ ...prev, [name]: value }));
-     }
+    if (name === "isActive") {
+      setFormData((prev) => ({ ...prev, [name]: value === "true" || value === true }));
+    } else {
+      setFormData((prev) => ({ ...prev, [name]: value }));
+    }
   };
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
@@ -105,11 +105,11 @@ export default function AddNewDoctorPage() {
       return;
     }
     if (password.length < 6) {
-        const errMsg = "Password must be at least 6 characters long.";
-        setError(errMsg);
-        toast({ title: "Invalid Password", description: errMsg, variant: "destructive" });
-        setIsLoading(false);
-        return;
+      const errMsg = "Password must be at least 6 characters long.";
+      setError(errMsg);
+      toast({ title: "Invalid Password", description: errMsg, variant: "destructive" });
+      setIsLoading(false);
+      return;
     }
 
     try {
@@ -123,7 +123,7 @@ export default function AddNewDoctorPage() {
 
       if (response.status === 201) {
         toast({ title: "Success!", description: "New doctor account created successfully." });
-        router.push("/dashboard/admin/doctors"); 
+        router.push("/dashboard/admin/doctors");
       } else {
         setError(result.message || "Failed to create doctor account.");
         toast({ title: "Error", description: result.message || "Failed to create doctor account.", variant: "destructive" });
@@ -149,7 +149,7 @@ export default function AddNewDoctorPage() {
         <form onSubmit={handleSubmit}>
           <CardContent className="space-y-6">
             {error && <p className="text-sm text-red-500 bg-red-100 p-3 rounded-md">{error}</p>}
-            
+
             <fieldset className="border p-4 rounded-md">
               <legend className="text-sm font-medium px-1">Basic Information <span className="text-red-500">*</span></legend>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
@@ -161,7 +161,13 @@ export default function AddNewDoctorPage() {
                 <div>
                   <Label htmlFor="gender">Gender</Label>
                   <Select name="gender" value={formData.gender} onValueChange={(value) => handleSelectChange("gender", value)}>
-                    <SelectTrigger><SelectValue placeholder="Select Gender" /></SelectTrigger>
+                    <SelectTrigger>
+                      <SelectValue>
+                        {formData.gender
+                          ? GENDERS.find(g => g === formData.gender)?.charAt(0).toUpperCase() + formData.gender.slice(1)
+                          : "Select Gender"}
+                      </SelectValue>
+                    </SelectTrigger>
                     <SelectContent>
                       {GENDERS.map(g => <SelectItem key={g} value={g}>{g.charAt(0).toUpperCase() + g.slice(1)}</SelectItem>)}
                     </SelectContent>
@@ -178,7 +184,13 @@ export default function AddNewDoctorPage() {
                 <div>
                   <Label htmlFor="department">Department</Label>
                   <Select name="department" value={formData.department} onValueChange={(value) => handleSelectChange("department", value)} disabled={isLoadingDepartments} required>
-                    <SelectTrigger><SelectValue placeholder={isLoadingDepartments ? "Loading..." : "Select Department"} /></SelectTrigger>
+                    <SelectTrigger>
+                      <SelectValue>
+                        {formData.department
+                          ? departments.find(d => d._id === formData.department)?.name || "Select Department"
+                          : (isLoadingDepartments ? "Loading..." : "Select Department")}
+                      </SelectValue>
+                    </SelectTrigger>
                     <SelectContent>
                       {departments.map(dept => <SelectItem key={dept._id} value={dept._id}>{dept.name}</SelectItem>)}
                     </SelectContent>
@@ -186,27 +198,27 @@ export default function AddNewDoctorPage() {
                 </div>
               </div>
             </fieldset>
-            
+
             <fieldset className="border p-4 rounded-md">
               <legend className="text-sm font-medium px-1">Contact & Other</legend>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
-                 <div><Label htmlFor="phoneNumber">Phone Number</Label><Input id="phoneNumber" name="phoneNumber" value={formData.phoneNumber} onChange={handleChange} /></div>
-                 <div><Label htmlFor="profileImage">Profile Image URL</Label><Input id="profileImage" name="profileImage" value={formData.profileImage} onChange={handleChange} placeholder="https://example.com/image.png"/></div>
+                <div><Label htmlFor="phoneNumber">Phone Number</Label><Input id="phoneNumber" name="phoneNumber" value={formData.phoneNumber} onChange={handleChange} /></div>
+                <div><Label htmlFor="profileImage">Profile Image URL</Label><Input id="profileImage" name="profileImage" value={formData.profileImage} onChange={handleChange} placeholder="https://example.com/image.png" /></div>
               </div>
               <div className="mt-4">
                 <Label>Address</Label>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-2 border p-3 rounded-md mt-1">
-                    <div><Label htmlFor="address.street" className="text-xs">Street</Label><Input id="address.street" name="address.street" value={formData.address.street} onChange={handleChange} /></div>
-                    <div><Label htmlFor="address.city" className="text-xs">City</Label><Input id="address.city" name="address.city" value={formData.address.city} onChange={handleChange} /></div>
-                    <div><Label htmlFor="address.state" className="text-xs">State</Label><Input id="address.state" name="address.state" value={formData.address.state} onChange={handleChange} /></div>
-                    <div><Label htmlFor="address.zipCode" className="text-xs">Zip Code</Label><Input id="address.zipCode" name="address.zipCode" value={formData.address.zipCode} onChange={handleChange} /></div>
-                    <div className="md:col-span-2"><Label htmlFor="address.country" className="text-xs">Country</Label><Input id="address.country" name="address.country" value={formData.address.country} onChange={handleChange} /></div>
+                  <div><Label htmlFor="address.street" className="text-xs">Street</Label><Input id="address.street" name="address.street" value={formData.address.street} onChange={handleChange} /></div>
+                  <div><Label htmlFor="address.city" className="text-xs">City</Label><Input id="address.city" name="address.city" value={formData.address.city} onChange={handleChange} /></div>
+                  <div><Label htmlFor="address.state" className="text-xs">State</Label><Input id="address.state" name="address.state" value={formData.address.state} onChange={handleChange} /></div>
+                  <div><Label htmlFor="address.zipCode" className="text-xs">Zip Code</Label><Input id="address.zipCode" name="address.zipCode" value={formData.address.zipCode} onChange={handleChange} /></div>
+                  <div className="md:col-span-2"><Label htmlFor="address.country" className="text-xs">Country</Label><Input id="address.country" name="address.country" value={formData.address.country} onChange={handleChange} /></div>
                 </div>
               </div>
-               <div className="flex items-center space-x-2 mt-4">
+              <div className="flex items-center space-x-2 mt-4">
                 <Checkbox id="isActive" name="isActive" checked={formData.isActive} onCheckedChange={(checked) => handleSelectChange("isActive", Boolean(checked))} />
                 <Label htmlFor="isActive" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                    Account is Active
+                  Account is Active
                 </Label>
               </div>
             </fieldset>
