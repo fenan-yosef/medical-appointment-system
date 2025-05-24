@@ -7,10 +7,10 @@ import RolePathGuard from "./RolePathGuard";
 
 const adminSections = [
     {
-        title: "User Management",
-        description: "Manage patients, doctors, and staff accounts.",
-        icon: Users,
-        href: "/dashboard/admin/users",
+        title: "Patient Management", // Updated title
+        description: "Manage patient accounts, view details, and perform actions like password resets.", // Updated description
+        icon: Users, // Icon can remain Users or be changed if a more specific one is available/desired
+        href: "/dashboard/admin/patients", // Updated href
     },
     {
         title: "Appointments",
