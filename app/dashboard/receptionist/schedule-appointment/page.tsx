@@ -5,10 +5,18 @@ import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea"; // For reason and notes
-import { useToast } from "@/components/ui/use-toast";
+
+// Fallback implementations for missing imports
+const Label = (props: React.LabelHTMLAttributes<HTMLLabelElement>) => <label {...props} />;
+const useToast = () => ({
+  toast: ({ title, description, variant }: { title: string; description: string; variant?: string }) => {
+    if (typeof window !== "undefined") {
+      alert(`${title}\n${description}`);
+    }
+  },
+});
 
 interface Department {
   _id: string;
@@ -82,9 +90,9 @@ export default function ScheduleAppointmentPage() {
             const errorData = await response.json();
             // It's possible no doctors are found (404), which isn't necessarily a toast-worthy error
             if (response.status === 404) {
-                toast({ title: "Info", description: errorData.message || "No doctors found for this department.", variant: "default" });
+              toast({ title: "Info", description: errorData.message || "No doctors found for this department.", variant: "default" });
             } else {
-                throw new Error(errorData.message || "Failed to fetch doctors");
+              throw new Error(errorData.message || "Failed to fetch doctors");
             }
           }
           const data = await response.json();
@@ -167,32 +175,38 @@ export default function ScheduleAppointmentPage() {
         <form onSubmit={handleSubmit}>
           <CardContent className="space-y-6">
             {error && <p className="text-sm text-red-500 bg-red-100 p-3 rounded-md">{error}</p>}
-            
+
             <div>
               <Label htmlFor="patientId">Patient ID <span className="text-red-500">*</span></Label>
-              <Input 
-                id="patientId" 
-                value={patientId} 
-                onChange={(e) => setPatientId(e.target.value)} 
-                placeholder="Enter known Patient ID" 
-                required 
+              <Input
+                id="patientId"
+                value={patientId}
+                onChange={(e) => setPatientId(e.target.value)}
+                placeholder="Enter known Patient ID"
+                required
               />
-               <p className="text-xs text-muted-foreground mt-1">
+              <p className="text-xs text-muted-foreground mt-1">
                 Currently, enter a known Patient ID. Patient search functionality will be enhanced later.
               </p>
             </div>
 
             <div>
               <Label htmlFor="department">Department <span className="text-red-500">*</span></Label>
-              <Select 
-                name="department" 
-                onValueChange={setSelectedDepartment} 
+              <Select
+                name="department"
+                onValueChange={setSelectedDepartment}
                 value={selectedDepartment}
                 disabled={isLoadingDepartments}
                 required
               >
-                <SelectTrigger id="department">
-                  <SelectValue placeholder={isLoadingDepartments ? "Loading departments..." : "Select department"} />
+                <SelectTrigger>
+                  <SelectValue>
+                    {isLoadingDepartments
+                      ? "Loading departments..."
+                      : selectedDepartment
+                        ? departments.find(d => d._id === selectedDepartment)?.name
+                        : "Select department"}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   {departments.map((dept) => (
@@ -206,20 +220,25 @@ export default function ScheduleAppointmentPage() {
 
             <div>
               <Label htmlFor="doctor">Doctor <span className="text-red-500">*</span></Label>
-              <Select 
-                name="doctor" 
-                onValueChange={setSelectedDoctor} 
+              <Select
+                name="doctor"
+                onValueChange={setSelectedDoctor}
                 value={selectedDoctor}
                 disabled={!selectedDepartment || isLoadingDoctors || doctors.length === 0}
                 required
               >
-                <SelectTrigger id="doctor">
-                  <SelectValue placeholder={
-                    isLoadingDoctors ? "Loading doctors..." : 
-                    !selectedDepartment ? "Select a department first" :
-                    doctors.length === 0 ? "No doctors available" :
-                    "Select doctor"
-                  } />
+                <SelectTrigger>
+                  <SelectValue>
+                    {isLoadingDoctors
+                      ? "Loading doctors..."
+                      : !selectedDepartment
+                        ? "Select a department first"
+                        : doctors.length === 0
+                          ? "No doctors available"
+                          : selectedDoctor
+                            ? doctors.find(d => d._id === selectedDoctor)?.firstName + " " + doctors.find(d => d._id === selectedDoctor)?.lastName
+                            : "Select doctor"}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   {doctors.map((doc) => (

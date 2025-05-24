@@ -53,9 +53,11 @@ export default function LoginPage() {
 
             if (role === "admin") {
                 router.push("/dashboard/admin")
+            } else if (role === "receptionist") {
+                router.push("/dashboard/receptionist")
             } else if (role === "doctor") {
                 router.push("/dashboard/doctor")
-            } else {
+            } else if (role === "patient") {
                 router.push("/dashboard/patient")
             }
         } catch (error: any) {

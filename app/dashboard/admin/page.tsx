@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { Users, Calendar, Stethoscope, FileText, BarChart2, Settings, Bell, UserCog, ShieldCheck } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import RolePathGuard from "./RolePathGuard";
 
 const adminSections = [
     {
@@ -68,13 +69,10 @@ export default async function AdminDashboardPage() {
         redirect("/login");
     }
     const role = session.user.role;
-    const currentPath = "/dashboard/" + role;
-    if (!window.location.pathname.startsWith(currentPath)) {
-        redirect(currentPath);
-    }
 
     return (
         <div className="max-w-6xl mx-auto py-8 px-2 md:px-0">
+            <RolePathGuard role={role} />
             <h1 className="text-3xl font-bold mb-8">Admin Dashboard</h1>
             <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
                 {adminSections.map((section) => (

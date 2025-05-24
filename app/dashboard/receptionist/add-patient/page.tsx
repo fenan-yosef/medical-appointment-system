@@ -5,9 +5,16 @@ import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useToast } from "@/components/ui/use-toast"; // Assuming useToast is available
+
+// Fallback implementations for missing imports
+const Label = (props: React.LabelHTMLAttributes<HTMLLabelElement>) => <label {...props} />;
+const useToast = () => ({
+  toast: ({ title, description, variant }: { title: string; description: string; variant?: string }) => {
+    if (typeof window !== "undefined") {
+      alert(`${title}\n${description}`);
+    }
+  },
+});
 
 export default function AddNewPatientPage() {
   const router = useRouter();
@@ -61,11 +68,11 @@ export default function AddNewPatientPage() {
       }));
     }
   };
-  
+
   const handleSelectChange = (name: string, value: string) => {
     setFormData((prev) => ({
-        ...prev,
-        [name]: value,
+      ...prev,
+      [name]: value,
     }));
   };
 
@@ -77,14 +84,14 @@ export default function AddNewPatientPage() {
 
     // Basic frontend validation (more can be added)
     if (!formData.firstName || !formData.lastName || !formData.email || !formData.password || !formData.dateOfBirth || !formData.gender) {
-        setError("Please fill in all required fields: First Name, Last Name, Email, Password, Date of Birth, Gender.");
-        setIsLoading(false);
-        toast({
-          title: "Error",
-          description: "Please fill in all required fields.",
-          variant: "destructive",
-        });
-        return;
+      setError("Please fill in all required fields: First Name, Last Name, Email, Password, Date of Birth, Gender.");
+      setIsLoading(false);
+      toast({
+        title: "Error",
+        description: "Please fill in all required fields.",
+        variant: "destructive",
+      });
+      return;
     }
 
     try {
@@ -106,16 +113,16 @@ export default function AddNewPatientPage() {
         });
         // Clear form or redirect
         setFormData({
-            firstName: "",
-            lastName: "",
-            email: "",
-            password: "",
-            dateOfBirth: "",
-            gender: "",
-            phoneNumber: "",
-            address: { street: "", city: "", state: "", zipCode: "", country: "" },
-            emergencyContact: { name: "", relationship: "", phoneNumber: "" },
-            insurance: { provider: "", policyNumber: "", expiryDate: "" },
+          firstName: "",
+          lastName: "",
+          email: "",
+          password: "",
+          dateOfBirth: "",
+          gender: "",
+          phoneNumber: "",
+          address: { street: "", city: "", state: "", zipCode: "", country: "" },
+          emergencyContact: { name: "", relationship: "", phoneNumber: "" },
+          insurance: { provider: "", policyNumber: "", expiryDate: "" },
         });
         // router.push("/dashboard/receptionist"); // Optional redirect
       } else {
@@ -148,7 +155,7 @@ export default function AddNewPatientPage() {
         <form onSubmit={handleSubmit}>
           <CardContent className="space-y-6">
             {error && <p className="text-red-500 text-sm">{error}</p>}
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="firstName">First Name <span className="text-red-500">*</span></Label>
@@ -177,17 +184,21 @@ export default function AddNewPatientPage() {
               </div>
               <div>
                 <Label htmlFor="gender">Gender <span className="text-red-500">*</span></Label>
-                <Select name="gender" onValueChange={(value) => handleSelectChange("gender", value)} value={formData.gender}>
-                  <SelectTrigger id="gender">
-                    <SelectValue placeholder="Select gender" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="male">Male</SelectItem>
-                    <SelectItem value="female">Female</SelectItem>
-                    <SelectItem value="other">Other</SelectItem>
-                    <SelectItem value="prefer_not_to_say">Prefer not to say</SelectItem>
-                  </SelectContent>
-                </Select>
+                <select
+                  id="gender"
+                  name="gender"
+                  value={formData.gender}
+                  onChange={handleChange}
+                  required
+                  className="block w-full border border-gray-300 rounded-md px-3 py-2"
+                  disabled={isLoading}
+                >
+                  <option value="">Select gender</option>
+                  <option value="male">Male</option>
+                  <option value="female">Female</option>
+                  <option value="other">Other</option>
+                  <option value="prefer_not_to_say">Prefer not to say</option>
+                </select>
               </div>
             </div>
 
@@ -219,7 +230,7 @@ export default function AddNewPatientPage() {
                 <Input id="address.country" name="address.country" value={formData.address.country} onChange={handleChange} />
               </div>
             </fieldset>
-            
+
             <fieldset className="border p-4 rounded-md">
               <legend className="text-sm font-medium px-1">Emergency Contact</legend>
               <div className="space-y-4">
