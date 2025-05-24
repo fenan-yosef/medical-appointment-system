@@ -4,7 +4,7 @@ import { useState, useRef } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { signOut } from "next-auth/react"
-import { LayoutDashboard, Calendar, Users, FileText, Settings, LogOut, ChevronDown, Menu, X, PanelLeft, PanelRight, PanelRightOpen, PanelLeftClose } from "lucide-react"
+import { LayoutDashboard, Calendar, Users, FileText, Settings, LogOut, ChevronDown, Menu, X, PanelLeft, PanelRight, PanelRightOpen, PanelLeftClose, UserPlus, CalendarPlus } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
@@ -13,6 +13,7 @@ interface SidebarProps {
         name?: string | null
         email?: string | null
         image?: string | null
+        role?: string | null // Added role
     }
 }
 
@@ -48,42 +49,79 @@ export function Sidebar({ user }: SidebarProps) {
         window.onmouseup = resizing.current ? handleMouseUp : null
     }
 
-    const navItems = [
+    let currentNavItems = [];
+
+    const defaultNavItems = [
         {
             name: "Dashboard",
-            href: "/dashboard",
+            href: "/dashboard", // Default admin/other dashboard
             icon: LayoutDashboard,
         },
         {
             name: "Appointments",
-            href: "/appointments",
+            href: "/dashboard/appointments", // Adjusted path
             icon: Calendar,
             subItems: [
-                { name: "All Appointments", href: "/appointments" },
-                { name: "Add Appointment", href: "/appointments/add" },
-                { name: "Calendar View", href: "/appointments/calendar" },
+                { name: "All Appointments", href: "/dashboard/appointments" },
+                { name: "Add Appointment", href: "/dashboard/appointments/add" },
+                { name: "Calendar View", href: "/dashboard/appointments/calendar" },
             ],
         },
         {
             name: "Patients",
-            href: "/patients",
+            href: "/dashboard/patients", // Adjusted path
             icon: Users,
             subItems: [
-                { name: "All Patients", href: "/patients" },
-                { name: "Add Patient", href: "/patients/add" },
+                { name: "All Patients", href: "/dashboard/patients" },
+                { name: "Add Patient", href: "/dashboard/patients/add" }, // This might be for admin/doctor
             ],
         },
         {
             name: "Reports",
-            href: "/reports",
+            href: "/dashboard/reports", // Adjusted path
             icon: FileText,
         },
         {
             name: "Settings",
-            href: "/settings",
+            href: "/dashboard/settings", // Adjusted path
             icon: Settings,
         },
-    ]
+    ];
+
+    const receptionistNavItems = [
+        {
+            name: "Dashboard",
+            href: "/dashboard/receptionist",
+            icon: LayoutDashboard,
+        },
+        {
+            name: "Add Patient",
+            href: "/dashboard/receptionist/add-patient",
+            icon: UserPlus,
+        },
+        {
+            name: "Schedule Appointment",
+            href: "/dashboard/receptionist/schedule-appointment",
+            icon: CalendarPlus,
+        },
+        // Settings might be common, or receptionist-specific settings page
+        {
+            name: "Settings",
+            href: "/dashboard/settings", // Or a receptionist specific settings
+            icon: Settings,
+        }
+    ];
+
+    if (user?.role === "receptionist") {
+        currentNavItems = receptionistNavItems;
+    } else if (user?.role === "admin") { // Example for admin, assuming defaultNavItems are for admin
+        currentNavItems = defaultNavItems;
+    } else {
+        // Default for other roles or if role is not defined (could be patient dashboard, or a limited view)
+        // For now, let's assume defaultNavItems are for a general authenticated user if not receptionist or admin
+        currentNavItems = defaultNavItems; 
+    }
+
 
     return (
         <>
@@ -129,8 +167,8 @@ export function Sidebar({ user }: SidebarProps) {
                 {/* Navigation */}
                 <nav className={cn("flex-1 overflow-y-auto py-4", collapsed ? "px-1" : "px-3")}>
                     <ul className="space-y-1">
-                        {navItems.map((item) => {
-                            const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`)
+                        {currentNavItems.map((item) => {
+                            const isActive = pathname === item.href || (item.href && pathname.startsWith(`${item.href}/`))
                             return (
                                 <li key={item.name}>
                                     {item.subItems ? (
