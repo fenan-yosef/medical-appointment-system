@@ -2,7 +2,7 @@
 import { useState, useRef } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { signOut } from "next-auth/react"
+import { signOut, useSession } from "next-auth/react" // Import useSession
 import { LayoutDashboard, Calendar, Users, FileText, Settings, LogOut, ChevronDown, Menu, X, PanelLeft, PanelRight, UserPlus, CalendarPlus } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
@@ -100,15 +100,16 @@ const patientNavItems: NavItem[] = [
 ]
 
 interface SidebarProps {
-    user: {
+    user: { // Renamed initialUser back to user
         name?: string | null
         email?: string | null
         role?: string | null
     }
 }
 
-export function Sidebar({ user }: SidebarProps) {
+export function Sidebar({ user }: SidebarProps) { // Use user instead of initialUser
     const pathname = usePathname() || ""
+    const { data: clientSession, status: clientStatus } = useSession() // Call useSession
     const [isOpen, setIsOpen] = useState(false)
     const [collapsed, setCollapsed] = useState(false)
     const [sidebarWidth, setSidebarWidth] = useState(256)
@@ -137,9 +138,29 @@ export function Sidebar({ user }: SidebarProps) {
         window.onmouseup = resizing.current ? handleMouseUp : null
     }
 
-    // Choose nav items based on the role
+    console.log("Sidebar: user:", user);
+    console.log("Sidebar: clientSession:", clientSession);
+
+    // Determine effectiveUser based on clientSession and initialUser
+    let effectiveUser = user; // Changed from initialUser
+    if (clientStatus === "authenticated" && clientSession?.user?.role) {
+        effectiveUser = {
+            name: clientSession.user.name || user.name, // Changed from initialUser.name
+            email: clientSession.user.email || user.email, // Changed from initialUser.email
+            role: clientSession.user.role, // Prioritize client-side role
+        };
+    } else if (clientStatus === "authenticated" && clientSession?.user) {
+        effectiveUser = {
+            name: clientSession.user.name || user.name, // Changed from initialUser.name
+            email: clientSession.user.email || user.email, // Changed from initialUser.email
+            role: user.role, // Fallback to initialUser's role if client's is missing // Changed from initialUser.role
+        };
+    }
+
+
+    // Choose nav items based on the effectiveUser's role
     let currentNavItems: NavItem[] = []
-    switch (user?.role) {
+    switch (effectiveUser?.role) {
         case "admin":
             currentNavItems = adminNavItems
             break
@@ -150,7 +171,8 @@ export function Sidebar({ user }: SidebarProps) {
             currentNavItems = patientNavItems
             break
         default:
-            currentNavItems = adminNavItems
+            // console.log("Sidebar: Role not found or session loading, using default (admin) nav items. Effective user:", effectiveUser);
+            currentNavItems = adminNavItems // Default fallback
     }
 
     return (
@@ -242,13 +264,13 @@ export function Sidebar({ user }: SidebarProps) {
                     <div className="flex items-center w-full">
                         <div className="flex-shrink-0">
                             <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center">
-                                <span className="text-gray-600 font-medium">{user?.name?.charAt(0) || "U"}</span>
+                                <span className="text-gray-600 font-medium">{effectiveUser?.name?.charAt(0) || "U"}</span>
                             </div>
                         </div>
                         {!collapsed && (
                             <div className="ml-3 min-w-0 flex-1">
-                                <p className="text-sm font-medium text-gray-900 truncate">{user?.name || "User"}</p>
-                                <p className="text-xs text-gray-500 truncate">{user?.email || "user@example.com"}</p>
+                                <p className="text-sm font-medium text-gray-900 truncate">{effectiveUser?.name || "User"}</p>
+                                <p className="text-xs text-gray-500 truncate">{effectiveUser?.email || "user@example.com"}</p>
                             </div>
                         )}
                         <Button variant="ghost" size="icon" onClick={() => signOut({ callbackUrl: "/login" })} title="Logout">

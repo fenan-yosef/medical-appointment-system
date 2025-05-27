@@ -42,14 +42,13 @@ export default function LoginPage() {
                 return
             }
 
-            // Fetch the latest session after login
-            const sessionRes = await fetch("/api/auth/session")
-            const session = await sessionRes.json()
-            const role = session?.user?.role
+            // Fetch the latest session after login using getSession()
+            const session = await getSession(); // from next-auth/react
 
-            console.log("Session after login:", session) // Debugging information
+            const role = session?.user?.role;
 
-            console.log("role:", role) // Debugging information
+            console.log("Session after login (using getSession):", session); // Debugging information
+            console.log("Role (from getSession):", role); // Debugging information
 
             if (role === "admin") {
                 router.push("/dashboard/admin")
