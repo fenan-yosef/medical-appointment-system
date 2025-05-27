@@ -62,7 +62,6 @@ const handler = NextAuth({
             }
             return session;
         },
-        // Removed the redirect callback to fix TS errors
     },
     pages: {
         signIn: "/login",
