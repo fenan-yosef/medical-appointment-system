@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { getServerSession } from "next-auth/next";
 import { Sidebar } from "@/components/sidebar"; // Adjust the import path as necessary  
 import DashboardClientLayoutWrapper from "./DashboardClientLayoutWrapper"; // Import the wrapper
+import DeviceAnalytics from "@/components/DeviceAnalytics";
 
 export default async function DashboardLayout({ children }: { children: ReactNode }) {
     const session = await getServerSession(); // Session for server components
@@ -13,6 +14,7 @@ export default async function DashboardLayout({ children }: { children: ReactNod
         <div className="flex min-h-screen">
             <Sidebar user={session?.user || {}} />
             <main className="flex-1 ml-0 md:ml-64 bg-gray-50 p-4">
+                {/* <DeviceAnalytics /> */}
                 <DashboardClientLayoutWrapper>
                     {children}
                 </DashboardClientLayoutWrapper>

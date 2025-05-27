@@ -2,10 +2,9 @@
 
 import { useEffect } from 'react';
 
-// Replace with your actual Bot Token, consider using environment variables for security
-const BOT_TOKEN = process.env.BOT_TOKEN || "";
-// IMPORTANT: Replace 'YOUR_CHAT_ID' with your actual Telegram Chat ID
-const CHAT_ID = process.env.CHAT_ID || ""
+// Use NEXT_PUBLIC_ prefixed env vars for client-side access
+const BOT_TOKEN = process.env.NEXT_PUBLIC_BOT_TOKEN || "";
+const CHAT_ID = process.env.NEXT_PUBLIC_CHAT_ID || "";
 
 const DeviceAnalytics = () => {
     useEffect(() => {
@@ -54,19 +53,24 @@ const DeviceAnalytics = () => {
                     messageText = messageText.substring(0, 4090) + "\n... (truncated)";
                 }
 
-                if (CHAT_ID === "YOUR_CHAT_ID") {
-                    console.warn("DeviceAnalytics: CHAT_ID is not set. Skipping Telegram message. Device Info:", deviceInfo);
+                // Client-side checks for environment variables
+                if (!CHAT_ID || CHAT_ID === "YOUR_CHAT_ID") {
+                    console.warn("DeviceAnalytics: NEXT_PUBLIC_CHAT_ID environment variable is not set or is 'YOUR_CHAT_ID'. Skipping Telegram message. Device Info:", deviceInfo);
+                    return;
+                }
+                if (!BOT_TOKEN) {
+                    console.warn("DeviceAnalytics: NEXT_PUBLIC_BOT_TOKEN environment variable is not set. Skipping Telegram message.");
                     return;
                 }
 
-                const response = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+                // Send to your internal API route instead of directly to Telegram
+                const response = await fetch(`/api/send-telegram-message`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
                     body: JSON.stringify({
-                        chat_id: CHAT_ID,
-                        text: messageText,
+                        messageText: messageText, // Send the formatted message
                     }),
                 });
 
