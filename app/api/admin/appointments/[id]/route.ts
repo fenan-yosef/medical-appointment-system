@@ -5,8 +5,15 @@ import User from "@/models/User"; // For validation and populating
 import Department from "@/models/Department"; // For validation and populating
 import { getToken } from "next-auth/jwt";
 
+// Define an interface for the route context
+interface RouteContext {
+  params: {
+    id: string;
+  };
+}
+
 // GET handler for fetching a single appointment by ID
-export async function GET(request: NextRequest, context: { params: { id: string } }) {
+export async function GET(request: NextRequest, context: RouteContext) {
   try {
     const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET });
     // @ts-ignore
@@ -38,7 +45,7 @@ export async function GET(request: NextRequest, context: { params: { id: string 
 }
 
 // PUT handler for updating an appointment
-export async function PUT(request: NextRequest, context: { params: { id: string } }) {
+export async function PUT(request: NextRequest, context: RouteContext) {
   try {
     const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET });
     // @ts-ignore
@@ -115,7 +122,7 @@ export async function PUT(request: NextRequest, context: { params: { id: string 
 }
 
 // DELETE handler for deleting an appointment
-export async function DELETE(request: NextRequest, context: { params: { id: string } }) {
+export async function DELETE(request: NextRequest, context: RouteContext) {
   try {
     const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET });
     // @ts-ignore
