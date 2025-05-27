@@ -3,12 +3,8 @@ import connectToDatabase from "@/lib/db";
 import User from "@/models/User";
 import { getToken } from "next-auth/jwt";
 
-interface Params {
-  id: string;
-}
-
 // GET handler for fetching a single patient's details by ID (Admin)
-export async function GET(req: NextRequest, { params }: { params: Params }) {
+export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
   try {
     const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
     // @ts-ignore
@@ -42,7 +38,7 @@ export async function GET(req: NextRequest, { params }: { params: Params }) {
 }
 
 // PUT handler for updating a patient's profile (Admin) - More comprehensive update
-export async function PUT(req: NextRequest, { params }: { params: Params }) {
+export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
   try {
     const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
     // @ts-ignore
@@ -85,11 +81,11 @@ export async function PUT(req: NextRequest, { params }: { params: Params }) {
     if (firstName !== undefined) updateFields.firstName = firstName;
     if (lastName !== undefined) updateFields.lastName = lastName;
     if (email !== undefined) {
-        const existingUserWithEmail = await User.findOne({ email: email, _id: { $ne: id } });
-        if (existingUserWithEmail) {
-            return NextResponse.json({ message: "Email is already in use by another user." }, { status: 409 });
-        }
-        updateFields.email = email;
+      const existingUserWithEmail = await User.findOne({ email: email, _id: { $ne: id } });
+      if (existingUserWithEmail) {
+        return NextResponse.json({ message: "Email is already in use by another user." }, { status: 409 });
+      }
+      updateFields.email = email;
     }
     if (phoneNumber !== undefined) updateFields.phoneNumber = phoneNumber;
     if (address !== undefined) updateFields.address = address;
@@ -98,7 +94,7 @@ export async function PUT(req: NextRequest, { params }: { params: Params }) {
     if (emergencyContact !== undefined) updateFields.emergencyContact = emergencyContact;
     if (insurance !== undefined) updateFields.insurance = insurance;
     if (isActive !== undefined) updateFields.isActive = isActive;
-    
+
     updateFields.updatedAt = new Date();
 
     const updatedPatient = await User.findByIdAndUpdate(
@@ -106,7 +102,7 @@ export async function PUT(req: NextRequest, { params }: { params: Params }) {
       { $set: updateFields },
       { new: true, runValidators: true, context: 'query' }
     )
-    .select("-password -resetPasswordToken -resetPasswordExpires -emailVerificationToken");
+      .select("-password -resetPasswordToken -resetPasswordExpires -emailVerificationToken");
 
     if (!updatedPatient) {
       return NextResponse.json({ message: "Patient not found or unable to update." }, { status: 404 });
@@ -118,8 +114,8 @@ export async function PUT(req: NextRequest, { params }: { params: Params }) {
     if (error.name === "ValidationError") {
       return NextResponse.json({ message: "Validation Error", errors: error.errors }, { status: 400 });
     }
-     if (error.code === 11000) { 
-        return NextResponse.json({ message: "Duplicate key error. An existing user might already have this email or other unique field.", details: error.keyValue }, { status: 409 });
+    if (error.code === 11000) {
+      return NextResponse.json({ message: "Duplicate key error. An existing user might already have this email or other unique field.", details: error.keyValue }, { status: 409 });
     }
     return NextResponse.json({ message: error.message || "Internal server error" }, { status: 500 });
   }
