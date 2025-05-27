@@ -6,16 +6,16 @@ import Department from "@/models/Department"; // For validation and populating
 import { getToken } from "next-auth/jwt";
 
 // GET handler for fetching a single appointment by ID
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(request: NextRequest, context: { params: { id: string } }) {
   try {
-    const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+    const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET });
     // @ts-ignore
     if (!token || token.role !== "admin") {
       return NextResponse.json({ message: "Unauthorized: Access restricted to admins." }, { status: 403 });
     }
 
     await connectToDatabase();
-    const { id } = params;
+    const { id } = context.params; // Destructure id from context.params
 
     if (!id.match(/^[0-9a-fA-F]{24}$/)) {
       return NextResponse.json({ message: "Invalid appointment ID format." }, { status: 400 });
@@ -32,28 +32,28 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
 
     return NextResponse.json({ message: "Appointment fetched successfully.", appointment }, { status: 200 });
   } catch (error: any) {
-    console.error(`Error fetching appointment ${params.id} (admin):`, error);
+    console.error(`Error fetching appointment ${context.params.id} (admin):`, error);
     return NextResponse.json({ message: error.message || "Internal server error" }, { status: 500 });
   }
 }
 
 // PUT handler for updating an appointment
-export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(request: NextRequest, context: { params: { id: string } }) {
   try {
-    const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+    const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET });
     // @ts-ignore
     if (!token || token.role !== "admin") {
       return NextResponse.json({ message: "Unauthorized: Access restricted to admins." }, { status: 403 });
     }
 
     await connectToDatabase();
-    const { id } = params;
+    const { id } = context.params; // Destructure id from context.params
 
     if (!id.match(/^[0-9a-fA-F]{24}$/)) {
       return NextResponse.json({ message: "Invalid appointment ID format." }, { status: 400 });
     }
 
-    const body = await req.json();
+    const body = await request.json();
     const { patient, doctor, department, date, time, reason, notes, status } = body;
 
     // Basic validation for presence of some fields if they are being updated
@@ -106,7 +106,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
 
     return NextResponse.json({ message: "Appointment updated successfully.", appointment: updatedAppointment }, { status: 200 });
   } catch (error: any) {
-    console.error(`Error updating appointment ${params.id} (admin):`, error);
+    console.error(`Error updating appointment ${context.params.id} (admin):`, error);
     if (error.name === "ValidationError") {
       return NextResponse.json({ message: "Validation Error", errors: error.errors }, { status: 400 });
     }
@@ -115,16 +115,16 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
 }
 
 // DELETE handler for deleting an appointment
-export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(request: NextRequest, context: { params: { id: string } }) {
   try {
-    const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+    const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET });
     // @ts-ignore
     if (!token || token.role !== "admin") {
       return NextResponse.json({ message: "Unauthorized: Access restricted to admins." }, { status: 403 });
     }
 
     await connectToDatabase();
-    const { id } = params;
+    const { id } = context.params; // Destructure id from context.params
 
     if (!id.match(/^[0-9a-fA-F]{24}$/)) {
       return NextResponse.json({ message: "Invalid appointment ID format." }, { status: 400 });
@@ -151,7 +151,7 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
     return NextResponse.json({ message: "Appointment cancelled successfully.", appointment: cancelledAppointment }, { status: 200 });
 
   } catch (error: any) {
-    console.error(`Error deleting/cancelling appointment ${params.id} (admin):`, error);
+    console.error(`Error deleting/cancelling appointment ${context.params.id} (admin):`, error);
     return NextResponse.json({ message: error.message || "Internal server error" }, { status: 500 });
   }
 }

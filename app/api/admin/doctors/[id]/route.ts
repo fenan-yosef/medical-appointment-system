@@ -4,21 +4,17 @@ import User from "@/models/User";
 import Department from "@/models/Department"; // To validate and populate department
 import { getToken } from "next-auth/jwt";
 
-interface Params {
-  id: string;
-}
-
 // GET handler for fetching a single doctor's profile by ID (Admin)
-export async function GET(req: NextRequest, { params }: { params: Params }) {
+export async function GET(request: NextRequest, context: { params: { id: string } }) {
   try {
-    const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+    const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET });
     // @ts-ignore
     if (!token || token.role !== "admin") {
       return NextResponse.json({ message: "Unauthorized: Access restricted to admins." }, { status: 403 });
     }
 
     await connectToDatabase();
-    const { id } = params;
+    const { id } = context.params; // Destructure id from context.params
 
     if (!id.match(/^[0-9a-fA-F]{24}$/)) {
       return NextResponse.json({ message: "Invalid doctor ID format." }, { status: 400 });
@@ -38,22 +34,22 @@ export async function GET(req: NextRequest, { params }: { params: Params }) {
 
     return NextResponse.json({ message: "Doctor profile fetched successfully.", doctor }, { status: 200 });
   } catch (error: any) {
-    console.error(`Error fetching doctor ${params.id} (admin):`, error);
+    console.error(`Error fetching doctor ${context.params.id} (admin):`, error);
     return NextResponse.json({ message: error.message || "Internal server error" }, { status: 500 });
   }
 }
 
 // PUT handler for updating a doctor's profile (Admin)
-export async function PUT(req: NextRequest, { params }: { params: Params }) {
+export async function PUT(request: NextRequest, context: { params: { id: string } }) {
   try {
-    const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+    const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET });
     // @ts-ignore
     if (!token || token.role !== "admin") {
       return NextResponse.json({ message: "Unauthorized: Access restricted to admins." }, { status: 403 });
     }
 
     await connectToDatabase();
-    const { id } = params;
+    const { id } = context.params; // Destructure id from context.params
 
     if (!id.match(/^[0-9a-fA-F]{24}$/)) {
       return NextResponse.json({ message: "Invalid doctor ID format." }, { status: 400 });
@@ -67,7 +63,7 @@ export async function PUT(req: NextRequest, { params }: { params: Params }) {
       return NextResponse.json({ message: "User found but cannot be updated through this endpoint as they are not a doctor." }, { status: 400 });
     }
 
-    const body = await req.json();
+    const body = await request.json();
     const {
       firstName,
       lastName,
@@ -90,12 +86,12 @@ export async function PUT(req: NextRequest, { params }: { params: Params }) {
     if (firstName !== undefined) updateFields.firstName = firstName;
     if (lastName !== undefined) updateFields.lastName = lastName;
     if (email !== undefined) {
-        // Add email validation if necessary, e.g., check format or if it's already taken by another user
-        const existingUserWithEmail = await User.findOne({ email: email, _id: { $ne: id } });
-        if (existingUserWithEmail) {
-            return NextResponse.json({ message: "Email is already in use by another user." }, { status: 409 });
-        }
-        updateFields.email = email;
+      // Add email validation if necessary, e.g., check format or if it's already taken by another user
+      const existingUserWithEmail = await User.findOne({ email: email, _id: { $ne: id } });
+      if (existingUserWithEmail) {
+        return NextResponse.json({ message: "Email is already in use by another user." }, { status: 409 });
+      }
+      updateFields.email = email;
     }
     if (phoneNumber !== undefined) updateFields.phoneNumber = phoneNumber;
     if (address !== undefined) updateFields.address = address;
@@ -108,7 +104,7 @@ export async function PUT(req: NextRequest, { params }: { params: Params }) {
 
     if (department !== undefined) {
       if (department === null || department === "") { // Allow unsetting department
-        updateFields.department = null; 
+        updateFields.department = null;
       } else if (!department.match(/^[0-9a-fA-F]{24}$/)) {
         return NextResponse.json({ message: "Invalid department ID format." }, { status: 400 });
       } else {
@@ -119,7 +115,7 @@ export async function PUT(req: NextRequest, { params }: { params: Params }) {
         updateFields.department = department;
       }
     }
-    
+
     // Update timestamp
     updateFields.updatedAt = new Date();
 
@@ -128,8 +124,8 @@ export async function PUT(req: NextRequest, { params }: { params: Params }) {
       { $set: updateFields },
       { new: true, runValidators: true, context: 'query' } // Return updated doc, run schema validators
     )
-    .select("-password") // Exclude password from response
-    .populate({ path: "department", model: Department, select: "name" });
+      .select("-password") // Exclude password from response
+      .populate({ path: "department", model: Department, select: "name" });
 
     if (!updatedDoctor) {
       return NextResponse.json({ message: "Doctor not found or unable to update." }, { status: 404 });
@@ -137,12 +133,12 @@ export async function PUT(req: NextRequest, { params }: { params: Params }) {
 
     return NextResponse.json({ message: "Doctor profile updated successfully.", doctor: updatedDoctor }, { status: 200 });
   } catch (error: any) {
-    console.error(`Error updating doctor ${params.id} (admin):`, error);
+    console.error(`Error updating doctor ${context.params.id} (admin):`, error);
     if (error.name === "ValidationError") {
       return NextResponse.json({ message: "Validation Error", errors: error.errors }, { status: 400 });
     }
     if (error.code === 11000) { // Mongoose duplicate key error (e.g. email)
-        return NextResponse.json({ message: "Duplicate key error. An existing user might already have this email or other unique field.", details: error.keyValue }, { status: 409 });
+      return NextResponse.json({ message: "Duplicate key error. An existing user might already have this email or other unique field.", details: error.keyValue }, { status: 409 });
     }
     return NextResponse.json({ message: error.message || "Internal server error" }, { status: 500 });
   }

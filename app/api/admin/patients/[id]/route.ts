@@ -4,16 +4,16 @@ import User from "@/models/User";
 import { getToken } from "next-auth/jwt";
 
 // GET handler for fetching a single patient's details by ID (Admin)
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(request: NextRequest, context: { params: { id: string } }) {
   try {
-    const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+    const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET });
     // @ts-ignore
     if (!token || token.role !== "admin") {
       return NextResponse.json({ message: "Unauthorized: Access restricted to admins." }, { status: 403 });
     }
 
     await connectToDatabase();
-    const { id } = params;
+    const { id } = context.params; // Destructure id from context.params
 
     if (!id.match(/^[0-9a-fA-F]{24}$/)) {
       return NextResponse.json({ message: "Invalid patient ID format." }, { status: 400 });
@@ -32,22 +32,22 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
 
     return NextResponse.json({ message: "Patient details fetched successfully.", patient }, { status: 200 });
   } catch (error: any) {
-    console.error(`Error fetching patient ${params.id} (admin):`, error);
+    console.error(`Error fetching patient ${context.params.id} (admin):`, error);
     return NextResponse.json({ message: error.message || "Internal server error" }, { status: 500 });
   }
 }
 
 // PUT handler for updating a patient's profile (Admin) - More comprehensive update
-export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(request: NextRequest, context: { params: { id: string } }) {
   try {
-    const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+    const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET });
     // @ts-ignore
     if (!token || token.role !== "admin") {
       return NextResponse.json({ message: "Unauthorized: Access restricted to admins." }, { status: 403 });
     }
 
     await connectToDatabase();
-    const { id } = params;
+    const { id } = context.params; // Destructure id from context.params
 
     if (!id.match(/^[0-9a-fA-F]{24}$/)) {
       return NextResponse.json({ message: "Invalid patient ID format." }, { status: 400 });
@@ -61,7 +61,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
       return NextResponse.json({ message: "User found but cannot be updated through this endpoint as they are not a patient." }, { status: 400 });
     }
 
-    const body = await req.json();
+    const body = await request.json();
     const {
       firstName,
       lastName,
@@ -110,7 +110,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
 
     return NextResponse.json({ message: "Patient profile updated successfully.", patient: updatedPatient }, { status: 200 });
   } catch (error: any) {
-    console.error(`Error updating patient ${params.id} (admin):`, error);
+    console.error(`Error updating patient ${context.params.id} (admin):`, error);
     if (error.name === "ValidationError") {
       return NextResponse.json({ message: "Validation Error", errors: error.errors }, { status: 400 });
     }
