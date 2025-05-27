@@ -1,13 +1,14 @@
 "use client"
+
 import { useState, useRef } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { signOut } from "next-auth/react"
-import { LayoutDashboard, Calendar, Users, FileText, Settings, LogOut, ChevronDown, Menu, X, PanelLeft, PanelRight, UserPlus, CalendarPlus } from "lucide-react"
+import { LayoutDashboard, Calendar, Users, FileText, Settings, LogOut, ChevronDown, Menu, X, PanelLeft, PanelRight, PanelRightOpen, PanelLeftClose, UserPlus, CalendarPlus } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
-// Define the NavItem type
+// Modify the NavItem type to include an optional className
 interface NavItem {
     name: string;
     href: string;
@@ -15,109 +16,27 @@ interface NavItem {
     subItems?: NavItem[];
 }
 
-// Define lists for each role
-const adminNavItems: NavItem[] = [
-    {
-        name: "Dashboard",
-        href: "/dashboard/admin",
-        icon: LayoutDashboard,
-    },
-    {
-        name: "Appointments",
-        href: "/dashboard/admin/appointments",
-        icon: Calendar,
-    },
-    {
-        name: "Patients",
-        href: "/dashboard/admin/patients",
-        icon: Users,
-        subItems: [
-            { name: "All Patients", href: "/dashboard/admin/patients", icon: Users },
-            { name: "Add Patient", href: "/dashboard/admin/patients/add", icon: UserPlus },
-        ],
-    },
-    {
-        name: "Doctors",
-        href: "/dashboard/admin/doctors",
-        icon: FileText,
-    },
-    {
-        name: "Settings",
-        href: "/dashboard/admin/settings",
-        icon: Settings,
-    },
-]
-
-const receptionistNavItems: NavItem[] = [
-    {
-        name: "Dashboard",
-        href: "/dashboard/receptionist",
-        icon: LayoutDashboard,
-    },
-    {
-        name: "Add Patient",
-        href: "/dashboard/receptionist/add-patient",
-        icon: UserPlus,
-    },
-    {
-        name: "Schedule Appointment",
-        href: "/dashboard/receptionist/schedule-appointment",
-        icon: CalendarPlus,
-    },
-    {
-        name: "Settings",
-        href: "/dashboard/settings",
-        icon: Settings,
-    }
-]
-
-const patientNavItems: NavItem[] = [
-    {
-        name: "Dashboard",
-        href: "/dashboard/patient",
-        icon: LayoutDashboard,
-    },
-    {
-        name: "My Appointments",
-        href: "/dashboard/patient/appointments",
-        icon: Calendar,
-    },
-    {
-        name: "My Profile",
-        href: "/dashboard/patient/profile",
-        icon: Users,
-    },
-    {
-        name: "Medical Records",
-        href: "/dashboard/patient/records",
-        icon: FileText,
-    },
-    {
-        name: "Settings",
-        href: "/dashboard/settings",
-        icon: Settings,
-    },
-]
-
 interface SidebarProps {
     user: {
         name?: string | null
         email?: string | null
-        role?: string | null
+        image?: string | null
+        role?: string | null // Added role
     }
 }
 
-export function Sidebar({ user }: SidebarProps) {
+export function AdminSidebar({ user }: SidebarProps) {
     const pathname = usePathname() || ""
     const [isOpen, setIsOpen] = useState(false)
     const [collapsed, setCollapsed] = useState(false)
-    const [sidebarWidth, setSidebarWidth] = useState(256)
+    const [sidebarWidth, setSidebarWidth] = useState(256) // 64 * 4 = 256px (default w-64)
     const resizing = useRef(false)
 
     const toggleSidebar = () => setIsOpen(!isOpen)
     const closeSidebar = () => setIsOpen(false)
-    const toggleCollapse = () => setCollapsed(prev => !prev)
+    const toggleCollapse = () => setCollapsed((c) => !c)
 
+    // Handle drag to resize
     const handleMouseDown = (e: React.MouseEvent) => {
         resizing.current = true
         document.body.style.cursor = "col-resize"
@@ -132,25 +51,80 @@ export function Sidebar({ user }: SidebarProps) {
         resizing.current = false
         document.body.style.cursor = ""
     }
+    // Attach/detach listeners
     if (typeof window !== "undefined") {
         window.onmousemove = resizing.current ? handleMouseMove : null
         window.onmouseup = resizing.current ? handleMouseUp : null
     }
 
-    // Choose nav items based on the role
-    let currentNavItems: NavItem[] = []
-    switch (user?.role) {
-        case "admin":
-            currentNavItems = adminNavItems
-            break
-        case "receptionist":
-            currentNavItems = receptionistNavItems
-            break
-        case "patient":
-            currentNavItems = patientNavItems
-            break
-        default:
-            currentNavItems = adminNavItems
+    let currentNavItems: NavItem[] = []; // Explicitly type currentNavItems
+
+    const defaultNavItems: NavItem[] = [
+        {
+            name: "Dashboard",
+            href: "/dashboard",
+            icon: LayoutDashboard,
+        },
+        {
+            name: "Appointments",
+            href: "/dashboard/appointments",
+            icon: Calendar,
+            subItems: [
+                { name: "All Appointments", href: "/dashboard/appointments", icon: Calendar },
+                { name: "Add Appointment", href: "/dashboard/appointments/add", icon: CalendarPlus },
+                { name: "Calendar View", href: "/dashboard/appointments/calendar", icon: Calendar },
+            ],
+        },
+        {
+            name: "Patients",
+            href: "/dashboard/patients",
+            icon: Users,
+            subItems: [
+                { name: "All Patients", href: "/dashboard/patients", icon: Users },
+                { name: "Add Patient", href: "/dashboard/patients/add", icon: UserPlus },
+            ],
+        },
+        {
+            name: "Reports",
+            href: "/dashboard/reports",
+            icon: FileText,
+        },
+        {
+            name: "Settings",
+            href: "/dashboard/settings",
+            icon: Settings,
+        },
+    ];
+
+    const receptionistNavItems: NavItem[] = [
+        {
+            name: "Dashboard",
+            href: "/dashboard/receptionist",
+            icon: LayoutDashboard,
+        },
+        {
+            name: "Add Patient",
+            href: "/dashboard/receptionist/add-patient",
+            icon: UserPlus,
+        },
+        {
+            name: "Schedule Appointment",
+            href: "/dashboard/receptionist/schedule-appointment",
+            icon: CalendarPlus,
+        },
+        {
+            name: "Settings",
+            href: "/dashboard/settings",
+            icon: Settings,
+        },
+    ];
+
+    if (user?.role === "receptionist") {
+        currentNavItems = receptionistNavItems;
+    } else if (user?.role === "admin") {
+        currentNavItems = defaultNavItems;
+    } else {
+        currentNavItems = defaultNavItems;
     }
 
     return (
@@ -159,7 +133,11 @@ export function Sidebar({ user }: SidebarProps) {
             <Button variant="ghost" size="icon" className="fixed top-4 left-4 z-50 md:hidden" onClick={toggleSidebar}>
                 {isOpen ? <X /> : <Menu />}
             </Button>
+
+            {/* Overlay for mobile */}
             {isOpen && <div className="fixed inset-0 bg-black/50 z-40 md:hidden" onClick={closeSidebar} />}
+
+            {/* Sidebar */}
             <aside
                 className={cn(
                     "fixed inset-y-0 left-0 z-50 bg-white border-r border-gray-200 transition-all duration-300 ease-in-out flex flex-col",
@@ -174,15 +152,26 @@ export function Sidebar({ user }: SidebarProps) {
             >
                 <div className="flex items-center h-16 px-4 border-b border-gray-200 justify-between">
                     <div className="flex items-center space-x-2 ml-9">
+                        {/* <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center">
+                            <span className="text-white font-bold">S</span>
+                        </div> */}
                         {!collapsed && <span className="text-xl font-semibold">SDLM</span>}
                     </div>
-                    <Button variant="ghost" size="icon" className="ml-2" onClick={toggleCollapse} title={collapsed ? "Expand sidebar" : "Collapse sidebar"}>
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className="ml-2"
+                        onClick={toggleCollapse}
+                        title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+                    >
                         {collapsed ? <PanelRight /> : <PanelLeft />}
                     </Button>
                 </div>
+
+                {/* Navigation */}
                 <nav className={cn("flex-1 overflow-y-auto py-4", collapsed ? "px-1" : "px-3")}>
                     <ul className="space-y-1">
-                        {currentNavItems.map(item => {
+                        {currentNavItems.map((item) => {
                             const isActive = pathname === item.href || (item.href && pathname.startsWith(`${item.href}/`))
                             return (
                                 <li key={item.name}>
@@ -199,9 +188,9 @@ export function Sidebar({ user }: SidebarProps) {
                                                 {!collapsed && <span>{item.name}</span>}
                                                 {!collapsed && <ChevronDown className="ml-auto h-4 w-4" />}
                                             </button>
-                                            {!collapsed && item.subItems && (
+                                            {!collapsed && (
                                                 <ul className="mt-1 pl-10 space-y-1">
-                                                    {item.subItems.map(subItem => (
+                                                    {item.subItems.map((subItem: NavItem) => (
                                                         <li key={subItem.name}>
                                                             <Link
                                                                 href={subItem.href}
@@ -237,7 +226,17 @@ export function Sidebar({ user }: SidebarProps) {
                         })}
                     </ul>
                 </nav>
-                {!collapsed && <div className="absolute top-0 right-0 h-full w-2 cursor-col-resize z-50" onMouseDown={handleMouseDown} style={{ userSelect: "none" }} />}
+
+                {/* Resize handle */}
+                {!collapsed && (
+                    <div
+                        className="absolute top-0 right-0 h-full w-2 cursor-col-resize z-50"
+                        onMouseDown={handleMouseDown}
+                        style={{ userSelect: "none" }}
+                    />
+                )}
+
+                {/* User profile and logout */}
                 <div className={cn("p-4 border-t border-gray-200 flex items-center", collapsed && "justify-center p-2")}>
                     <div className="flex items-center w-full">
                         <div className="flex-shrink-0">
