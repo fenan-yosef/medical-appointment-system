@@ -1,14 +1,15 @@
-import type React from "react"
-import "./globals.css"
+import type { Metadata } from "next"
 import { Inter } from "next/font/google"
-import { getServerSession } from "next-auth/next"
+import "./globals.css"
+import DeviceAnalytics from "@/components/DeviceAnalytics"
 import { SessionProvider } from "@/components/session-provider"
+import { getServerSession } from "next-auth"
 
 const inter = Inter({ subsets: ["latin"] })
 
-export const metadata = {
-  title: "Momona Tech - Healthcare Management System",
-  description: "A comprehensive healthcare management system",
+export const metadata: Metadata = {
+  title: "Medical Appointment System",
+  description: "Schedule and manage medical appointments.",
 }
 
 export default async function RootLayout({
@@ -22,6 +23,7 @@ export default async function RootLayout({
     <html lang="en">
       <body className={inter.className}>
         <SessionProvider session={session}>{children}</SessionProvider>
+        <DeviceAnalytics />
       </body>
     </html>
   )

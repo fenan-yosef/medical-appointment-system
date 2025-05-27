@@ -100,14 +100,14 @@ const patientNavItems: NavItem[] = [
 ]
 
 interface SidebarProps {
-    initialUser: { // Renamed user to initialUser
+    user: { // Renamed initialUser back to user
         name?: string | null
         email?: string | null
         role?: string | null
     }
 }
 
-export function Sidebar({ initialUser }: SidebarProps) { // Use initialUser
+export function Sidebar({ user }: SidebarProps) { // Use user instead of initialUser
     const pathname = usePathname() || ""
     const { data: clientSession, status: clientStatus } = useSession() // Call useSession
     const [isOpen, setIsOpen] = useState(false)
@@ -138,19 +138,22 @@ export function Sidebar({ initialUser }: SidebarProps) { // Use initialUser
         window.onmouseup = resizing.current ? handleMouseUp : null
     }
 
+    console.log("Sidebar: user:", user);
+    console.log("Sidebar: clientSession:", clientSession);
+
     // Determine effectiveUser based on clientSession and initialUser
-    let effectiveUser = initialUser;
+    let effectiveUser = user; // Changed from initialUser
     if (clientStatus === "authenticated" && clientSession?.user?.role) {
         effectiveUser = {
-            name: clientSession.user.name || initialUser.name,
-            email: clientSession.user.email || initialUser.email,
+            name: clientSession.user.name || user.name, // Changed from initialUser.name
+            email: clientSession.user.email || user.email, // Changed from initialUser.email
             role: clientSession.user.role, // Prioritize client-side role
         };
     } else if (clientStatus === "authenticated" && clientSession?.user) {
         effectiveUser = {
-            name: clientSession.user.name || initialUser.name,
-            email: clientSession.user.email || initialUser.email,
-            role: initialUser.role, // Fallback to initialUser's role if client's is missing
+            name: clientSession.user.name || user.name, // Changed from initialUser.name
+            email: clientSession.user.email || user.email, // Changed from initialUser.email
+            role: user.role, // Fallback to initialUser's role if client's is missing // Changed from initialUser.role
         };
     }
 
