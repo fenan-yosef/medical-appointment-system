@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import {
   Table,
   TableBody,
@@ -106,6 +106,7 @@ export default function AdminAppointmentsPage() {
   const [editFormData, setEditFormData] = useState<Partial<Appointment>>({});
   const [isCancelConfirmOpen, setIsCancelConfirmOpen] = useState(false);
 
+  const hasFetched = useRef(false); // NEW: to track if fetchAppointments has already been called
 
   const fetchAppointments = useCallback(async () => {
     setIsLoading(true);
@@ -150,38 +151,44 @@ export default function AdminAppointmentsPage() {
   }, [filters, sorting, pagination.currentPage, pagination.limit, toast]);
 
   useEffect(() => {
-    fetchAppointments();
-  }, [fetchAppointments]);
+    if (!hasFetched.current) {
+      fetchAppointments();
+      hasFetched.current = true;
+    }
+  }, [fetchAppointments]); // Will now run fetchAppointments only once on mount
 
   // Fetch Departments and Doctors for filter dropdowns
-  useEffect(() => {
-    const fetchFilterData = async () => {
-      setIsLoadingFilters(true);
-      try {
-        const [deptRes, docRes] = await Promise.all([
-          fetch("/api/departments"), // Assuming this endpoint exists
-          fetch("/api/doctors")      // Assuming this endpoint exists
-        ]);
-        if (deptRes.ok) {
-          const deptData = await deptRes.json();
-          setDepartments(deptData.departments || []);
-        } else {
-          toast({ title: "Warning", description: "Could not load departments for filtering.", variant: "default" });
-        }
-        if (docRes.ok) {
-          const docData = await docRes.json();
-          setDoctors(docData.doctors || []);
-        } else {
-          toast({ title: "Warning", description: "Could not load doctors for filtering.", variant: "default" });
-        }
-      } catch (err) {
-        toast({ title: "Error", description: "Failed to load filter options.", variant: "destructive" });
-      } finally {
-        setIsLoadingFilters(false);
+  const fetchFilterData = useCallback(async () => {
+    setIsLoadingFilters(true);
+    try {
+      const [deptRes, docRes] = await Promise.all([
+        fetch("/api/departments"), // Assuming this endpoint exists
+        fetch("/api/doctors")      // Assuming this endpoint exists
+      ]);
+      if (deptRes.ok) {
+        const deptData = await deptRes.json();
+        setDepartments(deptData.departments || []);
+      } else {
+        // Consider not toasting here if toast itself is a dependency causing loops,
+        // or ensure toast is stable.
+        toast({ title: "Warning", description: "Could not load departments for filtering.", variant: "default" });
       }
-    };
+      if (docRes.ok) {
+        const docData = await docRes.json();
+        setDoctors(docData.doctors || []);
+      } else {
+        toast({ title: "Warning", description: "Could not load doctors for filtering.", variant: "default" });
+      }
+    } catch (err) {
+      toast({ title: "Error", description: "Failed to load filter options.", variant: "destructive" });
+    } finally {
+      setIsLoadingFilters(false);
+    }
+  }, [toast]); // fetchFilterData depends on toast
+
+  useEffect(() => {
     fetchFilterData();
-  }, [toast]);
+  }, [fetchFilterData]); // Effect depends on the fetchFilterData callback
 
   const handleFilterChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;

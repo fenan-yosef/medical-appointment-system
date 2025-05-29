@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useMemo, useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 // Fallbacks for missing UI components
@@ -92,6 +92,8 @@ interface PatientProfile {
 const GENDERS: PatientProfile["gender"][] = ["male", "female", "other", "prefer_not_to_say"];
 
 export default function AdminPatientsPage() {
+  console.log("Rendering Patients page"); // NEW: debug log in render
+
   const { toast } = useToast();
   const router = useRouter();
 
@@ -132,7 +134,12 @@ export default function AdminPatientsPage() {
   const [resetPasswordFeedback, setResetPasswordFeedback] = useState<string | null>(null);
 
 
+  const memoizedFilters = useMemo(() => filters, [filters.name, filters.email, filters.isActive]);
+  const memoizedSorting = useMemo(() => sorting, [sorting.sortBy, sorting.order]);
+  const memoizedPagination = useMemo(() => pagination, [pagination.currentPage, pagination.limit]);
+
   const fetchPatientsList = useCallback(async () => {
+    console.log("Fetching patients"); // NEW: debug log in fetch
     setIsLoading(true);
     setError(null);
     try {
@@ -164,7 +171,7 @@ export default function AdminPatientsPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [filters, sorting, pagination.currentPage, pagination.limit, toast]);
+  }, [memoizedFilters, memoizedSorting, memoizedPagination, toast]);
 
   useEffect(() => {
     fetchPatientsList();
