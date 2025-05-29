@@ -4,7 +4,7 @@ import { useState, useRef } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { signOut } from "next-auth/react"
-import { LayoutDashboard, Calendar, Users, FileText, Settings, LogOut, ChevronDown, Menu, X, PanelLeft, PanelRight, PanelRightOpen, PanelLeftClose, UserPlus, CalendarPlus } from "lucide-react"
+import { LayoutDashboard, Calendar, Users, FileText, Settings, LogOut, ChevronDown, Menu, X, PanelLeft, PanelRight, PanelRightOpen, PanelLeftClose, UserPlus, CalendarPlus, Briefcase, Bell } from "lucide-react" // Added Briefcase, Bell
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
@@ -83,6 +83,16 @@ export function AdminSidebar({ user }: SidebarProps) {
                 { name: "All Patients", href: "/dashboard/patients", icon: Users },
                 { name: "Add Patient", href: "/dashboard/patients/add", icon: UserPlus },
             ],
+        },
+        {
+            name: "Manage Services",
+            href: "/dashboard/admin/services",
+            icon: Briefcase, 
+        },
+        {
+            name: "Notifications",
+            href: "/dashboard/notifications",
+            icon: Bell,
         },
         {
             name: "Reports",

@@ -70,8 +70,40 @@ interface EmergencyContact {
 interface Insurance {
   provider?: string;
   policyNumber?: string;
+  groupNumber?: string; // Added from User model
   expiryDate?: string; // ISO string
 }
+
+// For new array fields
+interface CurrentMedication {
+  name?: string;
+  dosage?: string;
+  frequency?: string;
+}
+
+interface PastSurgery {
+  name?: string;
+  date?: string; // ISO string
+  notes?: string;
+}
+
+interface FamilyHistoryEntry {
+  relative?: string;
+  condition?: string;
+  notes?: string;
+}
+
+interface Vaccination {
+  vaccineName?: string;
+  dateAdministered?: string; // ISO string
+  nextDueDate?: string; // ISO string
+}
+interface MedicalHistoryEntry { // From User model
+    condition?: string;
+    diagnosedDate?: string; // ISO string
+    notes?: string;
+}
+
 
 interface PatientProfile {
   _id: string;
@@ -84,12 +116,21 @@ interface PatientProfile {
   gender?: "male" | "female" | "other" | "prefer_not_to_say";
   emergencyContact?: EmergencyContact;
   insurance?: Insurance;
+  medicalHistory?: MedicalHistoryEntry[]; // Updated from User model
   isActive: boolean;
   createdAt?: string;
   updatedAt?: string;
+
+  // New Patient Record Fields
+  allergies?: string[];
+  currentMedications?: CurrentMedication[];
+  pastSurgeries?: PastSurgery[];
+  familyHistory?: FamilyHistoryEntry[];
+  bloodType?: string;
+  vaccinations?: Vaccination[];
 }
 
-const GENDERS: PatientProfile["gender"][] = ["male", "female", "other", "prefer_not_to_say"];
+const GENDERS: Array<PatientProfile["gender"]> = ["male", "female", "other", "prefer_not_to_say"];
 
 export default function AdminPatientsPage() {
   console.log("Rendering Patients page"); // NEW: debug log in render
@@ -215,10 +256,26 @@ export default function AdminPatientsPage() {
       setEditFormData({
         ...data.patient,
         dateOfBirth: data.patient.dateOfBirth ? new Date(data.patient.dateOfBirth).toISOString().split('T')[0] : "",
-        insurance: {
           ...data.patient.insurance,
           expiryDate: data.patient.insurance?.expiryDate ? new Date(data.patient.insurance.expiryDate).toISOString().split('T')[0] : "",
-        }
+        },
+        medicalHistory: (data.patient.medicalHistory || []).map((mh: MedicalHistoryEntry) => ({
+            ...mh,
+            diagnosedDate: mh.diagnosedDate ? new Date(mh.diagnosedDate).toISOString().split('T')[0] : "",
+        })),
+        allergies: data.patient.allergies || [],
+        currentMedications: (data.patient.currentMedications || []).map((med: CurrentMedication) => ({ ...med })),
+        pastSurgeries: (data.patient.pastSurgeries || []).map((ps: PastSurgery) => ({
+            ...ps,
+            date: ps.date ? new Date(ps.date).toISOString().split('T')[0] : "",
+        })),
+        familyHistory: (data.patient.familyHistory || []).map((fh: FamilyHistoryEntry) => ({ ...fh })),
+        bloodType: data.patient.bloodType || "",
+        vaccinations: (data.patient.vaccinations || []).map((vac: Vaccination) => ({
+            ...vac,
+            dateAdministered: vac.dateAdministered ? new Date(vac.dateAdministered).toISOString().split('T')[0] : "",
+            nextDueDate: vac.nextDueDate ? new Date(vac.nextDueDate).toISOString().split('T')[0] : "",
+        })),
       });
       setIsEditModalOpen(true);
     } catch (err: any) {
@@ -252,8 +309,43 @@ export default function AdminPatientsPage() {
   };
 
   const handleEditCheckboxChange = (name: string, checked: boolean) => {
-    setEditFormData(prev => ({ ...prev, [name]: checked }))
-  }
+    setEditFormData(prev => ({ ...prev, [name]: checked }));
+  };
+
+  // Generic handler for array fields (add, remove, update item)
+  const handleArrayFieldChange = <T extends keyof PatientProfile, K extends PatientProfile[T] extends (infer U)[] ? U : never>(
+    fieldName: T,
+    index: number,
+    itemFieldName: keyof K | null, // null for direct string array or to remove item
+    value: any // string for itemFieldName, or K for adding new item, or undefined to remove
+  ) => {
+    setEditFormData(prev => {
+      const currentArray = (prev[fieldName] as K[] | undefined) || [];
+      const newArray = [...currentArray];
+
+      if (itemFieldName === null && value === undefined) { // Remove item
+        newArray.splice(index, 1);
+      } else if (itemFieldName === null && value !== undefined && typeof value !== 'object') { // Update item in string array
+        newArray[index] = value as K;
+      } else if (itemFieldName !== null && typeof newArray[index] === 'object') { // Update field within an object item
+        (newArray[index] as any)[itemFieldName] = value;
+      } else {
+        console.warn("Unhandled case in handleArrayFieldChange", {fieldName, index, itemFieldName, value});
+      }
+      return { ...prev, [fieldName]: newArray };
+    });
+  };
+  
+  const addArrayItem = <T extends keyof PatientProfile>(fieldName: T, newItem: PatientProfile[T] extends (infer U)[] ? U : never) => {
+    setEditFormData(prev => {
+        const currentArray = (prev[fieldName] as any[] | undefined) || [];
+        return {
+            ...prev,
+            [fieldName]: [...currentArray, newItem]
+        };
+    });
+  };
+
 
   const handleEditSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -495,13 +587,98 @@ export default function AdminPatientsPage() {
                 </div>
               </fieldset>
 
-              <div className="flex items-center space-x-2 pt-2">
+              {/* Blood Type */}
+              <div><Label htmlFor="bloodType">Blood Type</Label><Input id="bloodType" name="bloodType" value={editFormData.bloodType || ""} onChange={handleEditFormChange} /></div>
+              
+              {/* Allergies Fieldset */}
+              <fieldset className="border p-3 rounded-md md:col-span-2"><legend className="text-sm font-medium px-1">Allergies</legend>
+                {(editFormData.allergies || []).map((allergy, index) => (
+                  <div key={index} className="flex items-center gap-2 mb-1">
+                    <Input 
+                      value={allergy} 
+                      onChange={(e) => handleArrayFieldChange('allergies', index, null, e.target.value)} 
+                      className="flex-grow"
+                      placeholder="e.g., Peanuts"
+                    />
+                    <Button type="button" variant="destructive" size="sm" onClick={() => handleArrayFieldChange('allergies', index, null, undefined)}>Remove</Button>
+                  </div>
+                ))}
+                <Button type="button" variant="outline" size="sm" onClick={() => addArrayItem('allergies', '')}>+ Add Allergy</Button>
+              </fieldset>
+
+              {/* Current Medications Fieldset */}
+              <fieldset className="border p-3 rounded-md md:col-span-2"><legend className="text-sm font-medium px-1">Current Medications</legend>
+                {(editFormData.currentMedications || []).map((med, index) => (
+                  <div key={index} className="grid grid-cols-1 md:grid-cols-4 gap-2 mb-2 border-b pb-2">
+                    <Input placeholder="Name" value={med.name || ""} onChange={(e) => handleArrayFieldChange('currentMedications', index, 'name', e.target.value)} />
+                    <Input placeholder="Dosage" value={med.dosage || ""} onChange={(e) => handleArrayFieldChange('currentMedications', index, 'dosage', e.target.value)} />
+                    <Input placeholder="Frequency" value={med.frequency || ""} onChange={(e) => handleArrayFieldChange('currentMedications', index, 'frequency', e.target.value)} />
+                    <Button type="button" variant="destructive" size="sm" onClick={() => handleArrayFieldChange('currentMedications', index, null, undefined)}>Remove</Button>
+                  </div>
+                ))}
+                <Button type="button" variant="outline" size="sm" onClick={() => addArrayItem('currentMedications', { name: '', dosage: '', frequency: '' })}>+ Add Medication</Button>
+              </fieldset>
+
+              {/* Past Surgeries Fieldset */}
+              <fieldset className="border p-3 rounded-md md:col-span-2"><legend className="text-sm font-medium px-1">Past Surgeries</legend>
+                {(editFormData.pastSurgeries || []).map((surgery, index) => (
+                  <div key={index} className="grid grid-cols-1 md:grid-cols-4 gap-2 mb-2 border-b pb-2">
+                    <Input placeholder="Surgery Name" value={surgery.name || ""} onChange={(e) => handleArrayFieldChange('pastSurgeries', index, 'name', e.target.value)} />
+                    <Input type="date" placeholder="Date" value={surgery.date || ""} onChange={(e) => handleArrayFieldChange('pastSurgeries', index, 'date', e.target.value)} />
+                    <Input placeholder="Notes" value={surgery.notes || ""} onChange={(e) => handleArrayFieldChange('pastSurgeries', index, 'notes', e.target.value)} className="md:col-span-1" />
+                    <Button type="button" variant="destructive" size="sm" onClick={() => handleArrayFieldChange('pastSurgeries', index, null, undefined)}>Remove</Button>
+                  </div>
+                ))}
+                <Button type="button" variant="outline" size="sm" onClick={() => addArrayItem('pastSurgeries', { name: '', date: '', notes: '' })}>+ Add Surgery</Button>
+              </fieldset>
+
+              {/* Family History Fieldset */}
+              <fieldset className="border p-3 rounded-md md:col-span-2"><legend className="text-sm font-medium px-1">Family Medical History</legend>
+                {(editFormData.familyHistory || []).map((item, index) => (
+                  <div key={index} className="grid grid-cols-1 md:grid-cols-4 gap-2 mb-2 border-b pb-2">
+                    <Input placeholder="Relative" value={item.relative || ""} onChange={(e) => handleArrayFieldChange('familyHistory', index, 'relative', e.target.value)} />
+                    <Input placeholder="Condition" value={item.condition || ""} onChange={(e) => handleArrayFieldChange('familyHistory', index, 'condition', e.target.value)} />
+                    <Input placeholder="Notes" value={item.notes || ""} onChange={(e) => handleArrayFieldChange('familyHistory', index, 'notes', e.target.value)} className="md:col-span-1" />
+                    <Button type="button" variant="destructive" size="sm" onClick={() => handleArrayFieldChange('familyHistory', index, null, undefined)}>Remove</Button>
+                  </div>
+                ))}
+                <Button type="button" variant="outline" size="sm" onClick={() => addArrayItem('familyHistory', { relative: '', condition: '', notes: '' })}>+ Add Family History</Button>
+              </fieldset>
+
+              {/* Vaccinations Fieldset */}
+              <fieldset className="border p-3 rounded-md md:col-span-2"><legend className="text-sm font-medium px-1">Vaccinations</legend>
+                {(editFormData.vaccinations || []).map((vaccination, index) => (
+                  <div key={index} className="grid grid-cols-1 md:grid-cols-4 gap-2 mb-2 border-b pb-2">
+                    <Input placeholder="Vaccine Name" value={vaccination.vaccineName || ""} onChange={(e) => handleArrayFieldChange('vaccinations', index, 'vaccineName', e.target.value)} />
+                    <Input type="date" placeholder="Date Administered" value={vaccination.dateAdministered || ""} onChange={(e) => handleArrayFieldChange('vaccinations', index, 'dateAdministered', e.target.value)} />
+                    <Input type="date" placeholder="Next Due Date" value={vaccination.nextDueDate || ""} onChange={(e) => handleArrayFieldChange('vaccinations', index, 'nextDueDate', e.target.value)} />
+                    <Button type="button" variant="destructive" size="sm" onClick={() => handleArrayFieldChange('vaccinations', index, null, undefined)}>Remove</Button>
+                  </div>
+                ))}
+                <Button type="button" variant="outline" size="sm" onClick={() => addArrayItem('vaccinations', { vaccineName: '', dateAdministered: '', nextDueDate: '' })}>+ Add Vaccination</Button>
+              </fieldset>
+              
+              {/* Medical History (Existing - assuming it's similar to new array fields) */}
+              <fieldset className="border p-3 rounded-md md:col-span-2"><legend className="text-sm font-medium px-1">Medical Conditions History</legend>
+                {(editFormData.medicalHistory || []).map((item, index) => (
+                  <div key={index} className="grid grid-cols-1 md:grid-cols-4 gap-2 mb-2 border-b pb-2">
+                    <Input placeholder="Condition" value={item.condition || ""} onChange={(e) => handleArrayFieldChange('medicalHistory', index, 'condition', e.target.value)} />
+                    <Input type="date" placeholder="Diagnosed Date" value={item.diagnosedDate || ""} onChange={(e) => handleArrayFieldChange('medicalHistory', index, 'diagnosedDate', e.target.value)} />
+                    <Input placeholder="Notes" value={item.notes || ""} onChange={(e) => handleArrayFieldChange('medicalHistory', index, 'notes', e.target.value)} className="md:col-span-1" />
+                    <Button type="button" variant="destructive" size="sm" onClick={() => handleArrayFieldChange('medicalHistory', index, null, undefined)}>Remove</Button>
+                  </div>
+                ))}
+                <Button type="button" variant="outline" size="sm" onClick={() => addArrayItem('medicalHistory', { condition: '', diagnosedDate: '', notes: '' })}>+ Add Condition</Button>
+              </fieldset>
+
+
+              <div className="flex items-center space-x-2 pt-2 md:col-span-2">
                 <Checkbox id="isActive" name="isActive" checked={editFormData.isActive} onCheckedChange={(checked) => handleEditCheckboxChange("isActive", Boolean(checked))} />
                 <Label htmlFor="isActive">Account is Active</Label>
               </div>
 
-              <DialogFooter className="pt-4">
-                <DialogClose asChild><Button type="button" variant="outline">Cancel</Button></DialogClose>
+              <DialogFooter className="pt-4 md:col-span-2">
+                <DialogClose asChild><Button type="button" variant="outline" onClick={() => setIsEditModalOpen(false)}>Cancel</Button></DialogClose>
                 <Button type="submit" disabled={isLoading}>{isLoading ? "Saving..." : "Save Changes"}</Button>
               </DialogFooter>
             </form>

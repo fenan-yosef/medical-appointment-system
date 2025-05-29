@@ -58,26 +58,66 @@ const UserSchema = new mongoose.Schema({
         relationship: String,
         phoneNumber: String,
     },
-    medicalHistory: [
-        {
-            condition: String,
-            diagnosedDate: Date,
-            notes: String,
-        },
-    ],
+    medicalHistory: [{
+        _id: false, // Added _id: false for consistency
+        condition: String,
+        diagnosedDate: Date,
+        notes: String,
+    }],
     insurance: {
+        _id: false, // Added _id: false for consistency
         provider: String,
         policyNumber: String,
+        groupNumber: String, // Added groupNumber as it was in the original IUser but not schema
         expiryDate: Date,
     },
-    createdAt: {
-        type: Date,
-        default: Date.now,
+    // New Patient Record Fields
+    allergies: {
+        type: [String],
+        default: [],
     },
-    updatedAt: {
-        type: Date,
-        default: Date.now,
+    currentMedications: {
+        type: [{
+            _id: false,
+            name: String,
+            dosage: String,
+            frequency: String,
+        }],
+        default: [],
     },
+    pastSurgeries: {
+        type: [{
+            _id: false,
+            name: String,
+            date: Date,
+            notes: String,
+        }],
+        default: [],
+    },
+    familyHistory: {
+        type: [{
+            _id: false,
+            relative: String,
+            condition: String,
+            notes: String,
+        }],
+        default: [],
+    },
+    bloodType: {
+        type: String,
+        trim: true,
+    },
+    vaccinations: {
+        type: [{
+            _id: false,
+            vaccineName: String,
+            dateAdministered: Date,
+            nextDueDate: Date,
+        }],
+        default: [],
+    },
+    // createdAt and updatedAt are now handled by { timestamps: true }
+    // So, removing these explicit definitions with defaults
     lastLogin: Date,
     isActive: {
         type: Boolean,
@@ -89,16 +129,21 @@ const UserSchema = new mongoose.Schema({
     },
     resetPasswordToken: String,
     resetPasswordExpire: Date,
-})
+}, { timestamps: true })
 
-// Hash password before saving
+// Combined and cleaned up pre-save hook for password hashing.
+// The explicit updatedAt hook is removed as timestamps: true handles it.
 UserSchema.pre("save", async function (next) {
-    if (!this.isModified("password")) {
-        next()
+    // Only hash the password if it has been modified (or is new)
+    if (this.isModified("password")) {
+        try {
+            const salt = await bcrypt.genSalt(10);
+            this.password = await bcrypt.hash(this.password, salt);
+        } catch (err: any) { // Added type for err
+            return next(err); // Pass errors to Mongoose
+        }
     }
-    const salt = await bcrypt.genSalt(10)
-    this.password = await bcrypt.hash(this.password, salt)
-    next()
+    next();
 })
 
 // Method to check if password matches
