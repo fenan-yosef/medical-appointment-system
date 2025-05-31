@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import dbConnect from '@/lib/dbConnect';
+import dbConnect from '@/lib/db';
 import Notification from '@/models/Notification';
 import { getToken } from 'next-auth/jwt';
 
@@ -50,10 +50,10 @@ export async function POST(request: NextRequest) {
   if (!token || !token.sub) { // Basic auth check
     return NextResponse.json({ message: 'Authentication required' }, { status: 401 });
   }
-  
+
   // For now, this endpoint is a placeholder or might be restricted to admin roles in the future.
   // Actual notification creation will likely be handled by specific system events (e.g., new appointment).
-  
+
   // Example: Allow admin to create notifications
   // if (token.role !== 'admin') {
   //   return NextResponse.json({ message: 'Forbidden' }, { status: 403 });

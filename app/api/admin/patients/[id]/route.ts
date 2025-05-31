@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import dbConnect from '@/lib/dbConnect';
+import dbConnect from '@/lib/db';
 import User from '@/models/User'; // Using the updated User model
 import mongoose from 'mongoose';
 
@@ -72,13 +72,13 @@ export async function PUT(request: NextRequest, { params }: { params: Params }) 
     if (firstName) patientToUpdate.firstName = firstName;
     if (lastName) patientToUpdate.lastName = lastName;
     if (email && email !== patientToUpdate.email) {
-        const existingUser = await User.findOne({ email, _id: { $ne: id } });
-        if (existingUser) {
-            return NextResponse.json({ message: 'Email already in use by another account.' }, { status: 409 });
-        }
-        patientToUpdate.email = email;
-        // Consider email verification status if email is changed
-        // patientToUpdate.isEmailVerified = false; 
+      const existingUser = await User.findOne({ email, _id: { $ne: id } });
+      if (existingUser) {
+        return NextResponse.json({ message: 'Email already in use by another account.' }, { status: 409 });
+      }
+      patientToUpdate.email = email;
+      // Consider email verification status if email is changed
+      // patientToUpdate.isEmailVerified = false; 
     }
     if (phoneNumber) patientToUpdate.phoneNumber = phoneNumber;
     if (address) patientToUpdate.address = address;
@@ -99,7 +99,7 @@ export async function PUT(request: NextRequest, { params }: { params: Params }) 
     if (familyHistory) patientToUpdate.familyHistory = familyHistory;
     if (bloodType) patientToUpdate.bloodType = bloodType;
     if (vaccinations) patientToUpdate.vaccinations = vaccinations;
-    
+
     // Note: Password changes should ideally be handled by a separate, dedicated endpoint for security.
     // If password needs to be updatable here, ensure proper validation and hashing.
 
@@ -111,7 +111,7 @@ export async function PUT(request: NextRequest, { params }: { params: Params }) 
       return NextResponse.json({ message: 'Validation Error', errors: error.errors }, { status: 400 });
     }
     if (error.code === 11000) { // Duplicate key error (e.g. for email)
-        return NextResponse.json({ message: 'Duplicate field value entered.', error: error.keyValue }, { status: 409 });
+      return NextResponse.json({ message: 'Duplicate field value entered.', error: error.keyValue }, { status: 409 });
     }
     return NextResponse.json({ message: error.message }, { status: 500 });
   }

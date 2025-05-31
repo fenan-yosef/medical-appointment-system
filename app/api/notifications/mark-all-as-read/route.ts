@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import dbConnect from '@/lib/dbConnect';
+import dbConnect from '@/lib/db';
 import Notification from '@/models/Notification';
 import { getToken } from 'next-auth/jwt';
 
@@ -23,10 +23,10 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ success: true, message: 'No unread notifications found to mark as read.', modifiedCount: 0 });
     }
 
-    return NextResponse.json({ 
-      success: true, 
+    return NextResponse.json({
+      success: true,
       message: `Successfully marked ${result.modifiedCount} notifications as read.`,
-      modifiedCount: result.modifiedCount 
+      modifiedCount: result.modifiedCount
     });
   } catch (error: any) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });

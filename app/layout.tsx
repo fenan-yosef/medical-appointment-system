@@ -1,11 +1,8 @@
 import type { Metadata } from "next"
-import { Inter } from "next/font/google"
 import "./globals.css"
 import DeviceAnalytics from "@/components/DeviceAnalytics"
 import { SessionProvider } from "@/components/session-provider"
 import { getServerSession } from "next-auth"
-
-const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
   title: "Medical Appointment System",
@@ -21,7 +18,7 @@ export default async function RootLayout({
 
   return (
     <html lang="en">
-      <body className={inter.className}>
+      <body>
         <SessionProvider session={session}>{children}</SessionProvider>
         <DeviceAnalytics />
       </body>

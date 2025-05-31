@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import dbConnect from '@/lib/dbConnect';
+import dbConnect from '@/lib/db';
 import User from '@/models/User'; // Using the updated User model
 import bcrypt from 'bcryptjs';
 
@@ -26,9 +26,9 @@ export async function GET(request: NextRequest) {
         { phoneNumber: { $regex: searchQuery, $options: 'i' } },
       ];
     }
-    
+
     if (isActive !== null && isActive !== undefined && isActive !== '') {
-        query.isActive = isActive === 'true';
+      query.isActive = isActive === 'true';
     }
 
 
@@ -36,7 +36,8 @@ export async function GET(request: NextRequest) {
       .sort({ [sort]: sortOrder })
       .skip((page - 1) * limit)
       .limit(limit)
-      .select('-password'); // Exclude password from results
+      .select('-password') // Exclude password from results
+    // .lean();
 
     const totalPatients = await User.countDocuments(query);
 
@@ -84,7 +85,7 @@ export async function POST(request: NextRequest) {
     if (!email || !password || !firstName || !lastName) {
       return NextResponse.json({ message: 'Missing required fields: email, password, firstName, lastName are mandatory.' }, { status: 400 });
     }
-    
+
     const emailExists = await User.findOne({ email });
     if (emailExists) {
       return NextResponse.json({ message: 'Email already exists.' }, { status: 409 });
@@ -116,7 +117,7 @@ export async function POST(request: NextRequest) {
     });
 
     await newPatient.save();
-    
+
     // Exclude password from the returned object
     const patientResponse = newPatient.toObject();
     delete patientResponse.password;
@@ -126,8 +127,8 @@ export async function POST(request: NextRequest) {
     if (error.name === 'ValidationError') {
       return NextResponse.json({ message: 'Validation Error', errors: error.errors }, { status: 400 });
     }
-     if (error.code === 11000) { // Duplicate key error
-        return NextResponse.json({ message: 'Duplicate field value entered.', error: error.keyValue }, { status: 409 });
+    if (error.code === 11000) { // Duplicate key error
+      return NextResponse.json({ message: 'Duplicate field value entered.', error: error.keyValue }, { status: 409 });
     }
     return NextResponse.json({ message: error.message }, { status: 500 });
   }

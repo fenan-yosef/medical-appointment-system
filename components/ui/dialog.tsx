@@ -59,6 +59,10 @@ export const DialogFooter = ({
     </div>
 );
 
+export const DialogTrigger = ({ children }: { children: React.ReactNode }) => (
+    <button>{children}</button>
+);
+
 export const DialogClose = ({
     asChild,
     children,

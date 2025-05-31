@@ -1,453 +1,698 @@
-"use client";
+"use client"
 
-import { useState, useEffect, useCallback, useMemo } from "react";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-  DialogClose,
-} from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
-import { useToast } from "@/components/ui/use-toast";
-import { ChevronLeft, ChevronRight, Edit, Search, UserX, UserCheck, UserPlus } from "lucide-react"; // Added UserPlus
-import Link from "next/link"; // Added Link
+import type React from "react"
 
-interface Address {
-  street?: string;
-  city?: string;
-  state?: string;
-  zipCode?: string;
-  country?: string;
-}
+import { useState, useEffect } from "react"
+import { Search, RefreshCw, X } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Label } from "@/components/ui/label"
+import { Select, SelectContent, SelectItem } from "@/components/ui/select"
+import { useToast } from "@/hooks/use-toast"
 
-interface DoctorProfile {
-  _id: string;
+interface Doctor {
+  _id: string; // MongoDB ObjectId
   firstName: string;
   lastName: string;
   email: string;
-  phoneNumber?: string;
-  address?: Address;
-  dateOfBirth?: string; // ISO string
-  gender?: "male" | "female" | "other" | "prefer_not_to_say";
-  profileImage?: string;
-  specialization?: string;
-  licenseNumber?: string;
-  department?: { _id: string; name: string };
+  phoneNumber: string; // Corrected from `phone`
+  specialization: string; // Corrected from `specialty`
+  schedule?: string; // Optional
   isActive: boolean;
-  createdAt?: string;
-  updatedAt?: string;
+  licenseNumber?: string; // Optional
+  experience?: number; // Optional
+  department?: {
+    _id: string; // Department ObjectId
+    name: string; // Department name
+  };
 }
 
-interface Department {
-  _id: string;
-  name: string;
+interface DoctorsResponse {
+  doctors: Doctor[]
+  totalDoctors: number
+  page: number
+  totalPages: number
 }
 
-const GENDERS: DoctorProfile["gender"][] = ["male", "female", "other", "prefer_not_to_say"];
-
-
-export default function AdminDoctorsPage() {
-  const { toast } = useToast();
-
-  // Data states
-  const [doctorsList, setDoctorsList] = useState<DoctorProfile[]>([]);
-  const [departments, setDepartments] = useState<Department[]>([]);
-  
-  // Loading and error states
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [isLoadingModalData, setIsLoadingModalData] = useState(false);
-
-  // Filter states
-  const [filters, setFilters] = useState({
-    name: "",
-    specialization: "",
-    departmentId: "",
-    isActive: "", // "true", "false", or ""
-  });
-
-  // Sorting states
-  const [sorting, setSorting] = useState({
-    sortBy: "lastName",
-    order: "asc",
-  });
-
-  // Pagination states
-  const [pagination, setPagination] = useState({
-    currentPage: 1,
-    totalPages: 1,
-    totalDoctors: 0,
-    limit: 10,
-  });
-
-  // Modal states
-  const [selectedDoctor, setSelectedDoctor] = useState<DoctorProfile | null>(null);
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [editFormData, setEditFormData] = useState<Partial<DoctorProfile>>({});
-
-
-  const fetchDoctorsList = useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const params = new URLSearchParams();
-      if (filters.name) params.append("name", filters.name);
-      if (filters.specialization) params.append("specialization", filters.specialization);
-      if (filters.departmentId) params.append("departmentId", filters.departmentId);
-      if (filters.isActive !== "") params.append("isActive", filters.isActive);
-      
-      params.append("sortBy", sorting.sortBy);
-      params.append("order", sorting.order);
-      params.append("page", pagination.currentPage.toString());
-      params.append("limit", pagination.limit.toString());
-
-      const response = await fetch(`/api/admin/doctors?${params.toString()}`);
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to fetch doctors list");
-      }
-      const data = await response.json();
-      setDoctorsList(data.doctors || []);
-      setPagination(prev => ({
-        ...prev,
-        totalPages: data.totalPages || 1,
-        totalDoctors: data.totalDoctors || 0,
-      }));
-    } catch (err: any) {
-      setError(err.message);
-      toast({ title: "Error", description: err.message, variant: "destructive" });
-    } finally {
-      setIsLoading(false);
-    }
-  }, [filters, sorting, pagination.currentPage, pagination.limit, toast]);
-
-  useEffect(() => {
-    fetchDoctorsList();
-  }, [fetchDoctorsList]);
-
-  // Fetch Departments for filter/edit modal dropdowns
-  useEffect(() => {
-    const fetchDepts = async () => {
-      try {
-        const response = await fetch("/api/departments");
-        if (response.ok) {
-          const data = await response.json();
-          setDepartments(data.departments || []);
-        } else {
-          toast({ title: "Warning", description: "Could not load departments for filtering/editing.", variant: "default" });
-        }
-      } catch (err) {
-        toast({ title: "Error", description: "Failed to load departments.", variant: "destructive"});
-      }
-    };
-    fetchDepts();
-  }, [toast]);
-
-  const handleFilterChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
-    setFilters(prev => ({ ...prev, [name]: value }));
-    setPagination(prev => ({ ...prev, currentPage: 1 }));
-  };
-  
-  const handleSelectFilterChange = (name: string, value: string) => {
-    setFilters(prev => ({ ...prev, [name]: value }));
-    setPagination(prev => ({ ...prev, currentPage: 1 }));
-  };
-
-  const handleSortChange = (columnName: string) => {
-    setSorting(prev => ({
-      sortBy: columnName,
-      order: prev.sortBy === columnName && prev.order === "asc" ? "desc" : "asc",
-    }));
-    setPagination(prev => ({ ...prev, currentPage: 1 }));
-  };
-
-  const handlePageChange = (newPage: number) => {
-    if (newPage >= 1 && newPage <= pagination.totalPages) {
-      setPagination(prev => ({ ...prev, currentPage: newPage }));
-    }
-  };
-  
-  const openEditModal = async (doctor: DoctorProfile) => {
-    setSelectedDoctor(doctor);
-    setIsLoadingModalData(true);
-    try {
-        const response = await fetch(`/api/admin/doctors/${doctor._id}`);
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.message || "Failed to fetch doctor details.");
-        }
-        const data = await response.json();
-        setEditFormData({
-            ...data.doctor,
-            dateOfBirth: data.doctor.dateOfBirth ? new Date(data.doctor.dateOfBirth).toISOString().split('T')[0] : "",
-            department: data.doctor.department?._id, // Store only ID for select
-        });
-        setIsEditModalOpen(true);
-    } catch (err: any) {
-        toast({ title: "Error", description: err.message, variant: "destructive" });
-    } finally {
-        setIsLoadingModalData(false);
-    }
-  };
-  
-  const handleEditFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value, type } = e.target;
-    // @ts-ignore
-    const checked = e.target.checked; // For checkboxes/toggles if used
-
-    if (name.startsWith("address.")) {
-        const field = name.split('.')[1];
-        setEditFormData(prev => ({ ...prev, address: { ...prev.address, [field]: value } }));
-    } else if (type === "checkbox" && name === "isActive") {
-        setEditFormData(prev => ({ ...prev, [name]: checked }));
-    } else {
-        setEditFormData(prev => ({ ...prev, [name]: value }));
-    }
-  };
-
-  const handleEditSelectChange = (name: string, value: string | boolean) => {
-    setEditFormData(prev => ({ ...prev, [name]: value }));
-  }
-
-  const handleEditSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedDoctor) return;
-    setIsLoading(true); // Use a general loading for form submission
-    try {
-        const { _id, createdAt, updatedAt, ...payload } = editFormData; // Exclude non-updatable fields
-
-        // Ensure department is just an ID string if it's an object
-        if (payload.department && typeof payload.department === 'object') {
-            // @ts-ignore
-            payload.department = payload.department._id;
-        }
-        
-        const response = await fetch(`/api/admin/doctors/${selectedDoctor._id}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        });
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.message || "Failed to update doctor profile.");
-        }
-        toast({ title: "Success", description: "Doctor profile updated successfully." });
-        setIsEditModalOpen(false);
-        fetchDoctorsList(); // Refresh list
-    } catch (err: any) {
-        setError(err.message); // Can show this error in modal or as toast
-        toast({ title: "Error updating profile", description: err.message, variant: "destructive" });
-    } finally {
-        setIsLoading(false);
-    }
-  };
+// Custom Dialog Components
+const Dialog = ({ open, children }: { open: boolean; children: React.ReactNode }) => {
+  if (!open) return null
 
   return (
-    <div className="container mx-auto py-8 px-4 md:px-6 lg:px-8">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold text-gray-800">Manage Doctor Profiles</h1>
-        <Link href="/dashboard/admin/doctors/add" passHref>
-          <Button>
-            <UserPlus className="mr-2 h-5 w-5" /> Add New Doctor
-          </Button>
-        </Link>
-      </div>
-
-      {/* Filters Section */}
-      <div className="mb-6 p-4 bg-white shadow rounded-lg">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 items-end">
-          <Input name="name" value={filters.name} onChange={handleFilterChange} placeholder="Search by Name..." />
-          <Input name="specialization" value={filters.specialization} onChange={handleFilterChange} placeholder="Search by Specialization..." />
-          <Select name="departmentId" value={filters.departmentId} onValueChange={(value) => handleSelectFilterChange("departmentId", value)}>
-            <SelectTrigger><SelectValue placeholder="Filter by Department" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="">All Departments</SelectItem>
-              {departments.map(dept => <SelectItem key={dept._id} value={dept._id}>{dept.name}</SelectItem>)}
-            </SelectContent>
-          </Select>
-          <Select name="isActive" value={filters.isActive} onValueChange={(value) => handleSelectFilterChange("isActive", value)}>
-            <SelectTrigger><SelectValue placeholder="Filter by Status" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="">All Statuses</SelectItem>
-              <SelectItem value="true">Active</SelectItem>
-              <SelectItem value="false">Inactive</SelectItem>
-            </SelectContent>
-          </Select>
-          <Button onClick={() => fetchDoctorsList()} className="w-full md:w-auto">
-            <Search className="mr-2 h-4 w-4"/> Apply
-          </Button>
-        </div>
-      </div>
-      
-      {isLoading && !isEditModalOpen && <p className="text-center text-gray-600 py-4">Loading doctors...</p>}
-      {error && <p className="text-center text-red-600 bg-red-100 p-3 rounded-md">{error}</p>}
-
-      {/* Table Section */}
-      {!isLoading && !error && (
-        <div className="bg-white shadow rounded-lg overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead onClick={() => handleSortChange('lastName')} className="cursor-pointer">Name</TableHead>
-                <TableHead onClick={() => handleSortChange('email')} className="cursor-pointer">Email</TableHead>
-                <TableHead onClick={() => handleSortChange('specialization')} className="cursor-pointer">Specialization</TableHead>
-                <TableHead onClick={() => handleSortChange('department.name')} className="cursor-pointer">Department</TableHead>
-                <TableHead>Phone</TableHead>
-                <TableHead onClick={() => handleSortChange('isActive')} className="cursor-pointer">Status</TableHead>
-                <TableHead>Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {doctorsList.length > 0 ? (
-                doctorsList.map((doc) => (
-                  <TableRow key={doc._id}>
-                    <TableCell>{doc.firstName} {doc.lastName}</TableCell>
-                    <TableCell>{doc.email}</TableCell>
-                    <TableCell>{doc.specialization || "N/A"}</TableCell>
-                    <TableCell>{doc.department?.name || "N/A"}</TableCell>
-                    <TableCell>{doc.phoneNumber || "N/A"}</TableCell>
-                    <TableCell>
-                      <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                        doc.isActive ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-                      }`}>
-                        {doc.isActive ? "Active" : "Inactive"}
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      <Button variant="outline" size="sm" onClick={() => openEditModal(doc)} disabled={isLoadingModalData}>
-                        <Edit className="mr-1 h-4 w-4" /> {isLoadingModalData && selectedDoctor?._id === doc._id ? "Loading..." : "Edit Profile"}
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell colSpan={7} className="text-center text-gray-500 py-6">No doctors found.</TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </div>
-      )}
-
-      {/* Pagination Section */}
-      {!isLoading && !error && doctorsList.length > 0 && (
-         <div className="mt-6 flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
-            <div className="text-sm text-gray-600">
-                Showing {Math.min(1 + (pagination.currentPage - 1) * pagination.limit, pagination.totalDoctors)} 
-                to {Math.min(pagination.currentPage * pagination.limit, pagination.totalDoctors)} of {pagination.totalDoctors} doctors
-            </div>
-            <div className="flex items-center space-x-2">
-                <Button variant="outline" onClick={() => handlePageChange(pagination.currentPage - 1)} disabled={pagination.currentPage === 1} size="sm">
-                <ChevronLeft className="h-4 w-4 mr-1 md:mr-2"/> Previous
-                </Button>
-                <span className="text-sm p-2">Page {pagination.currentPage} of {pagination.totalPages}</span>
-                <Button variant="outline" onClick={() => handlePageChange(pagination.currentPage + 1)} disabled={pagination.currentPage === pagination.totalPages} size="sm">
-                Next <ChevronRight className="h-4 w-4 ml-1 md:ml-2"/>
-                </Button>
-            </div>
-            <Select value={pagination.limit.toString()} onValueChange={(value) => setPagination(p => ({...p, limit: parseInt(value), currentPage: 1}))}>
-                <SelectTrigger className="w-24"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                    <SelectItem value="10">10/page</SelectItem>
-                    <SelectItem value="20">20/page</SelectItem>
-                    <SelectItem value="50">50/page</SelectItem>
-                </SelectContent>
-            </Select>
-        </div>
-      )}
-
-      {/* Edit Profile Modal */}
-      <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
-        <DialogContent className="max-w-2xl"> {/* Wider modal for more fields */}
-          <DialogHeader>
-            <DialogTitle>Edit Doctor Profile: {selectedDoctor?.firstName} {selectedDoctor?.lastName}</DialogTitle>
-            <DialogDescription>Modify the doctor's details below. Click save when you're done.</DialogDescription>
-          </DialogHeader>
-          {isLoadingModalData && <p className="text-center py-4">Loading doctor details...</p>}
-          {!isLoadingModalData && selectedDoctor && (
-            <form onSubmit={handleEditSubmit} className="space-y-4 max-h-[70vh] overflow-y-auto p-2">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div><Label htmlFor="firstName">First Name</Label><Input id="firstName" name="firstName" value={editFormData.firstName || ""} onChange={handleEditFormChange} /></div>
-                <div><Label htmlFor="lastName">Last Name</Label><Input id="lastName" name="lastName" value={editFormData.lastName || ""} onChange={handleEditFormChange} /></div>
-                <div><Label htmlFor="email">Email</Label><Input id="email" name="email" type="email" value={editFormData.email || ""} onChange={handleEditFormChange} /></div>
-                <div><Label htmlFor="phoneNumber">Phone Number</Label><Input id="phoneNumber" name="phoneNumber" value={editFormData.phoneNumber || ""} onChange={handleEditFormChange} /></div>
-                <div><Label htmlFor="dateOfBirth">Date of Birth</Label><Input id="dateOfBirth" name="dateOfBirth" type="date" value={editFormData.dateOfBirth || ""} onChange={handleEditFormChange} /></div>
-                <div>
-                  <Label htmlFor="gender">Gender</Label>
-                  <Select name="gender" value={editFormData.gender || ""} onValueChange={(value) => handleEditSelectChange("gender", value)}>
-                    <SelectTrigger><SelectValue placeholder="Select Gender" /></SelectTrigger>
-                    <SelectContent>
-                      {GENDERS.map(g => <SelectItem key={g} value={g}>{g.charAt(0).toUpperCase() + g.slice(1)}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              
-              <Label>Address</Label>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border p-3 rounded-md">
-                <div><Label htmlFor="address.street" className="text-xs">Street</Label><Input id="address.street" name="address.street" value={editFormData.address?.street || ""} onChange={handleEditFormChange} /></div>
-                <div><Label htmlFor="address.city" className="text-xs">City</Label><Input id="address.city" name="address.city" value={editFormData.address?.city || ""} onChange={handleEditFormChange} /></div>
-                <div><Label htmlFor="address.state" className="text-xs">State</Label><Input id="address.state" name="address.state" value={editFormData.address?.state || ""} onChange={handleEditFormChange} /></div>
-                <div><Label htmlFor="address.zipCode" className="text-xs">Zip Code</Label><Input id="address.zipCode" name="address.zipCode" value={editFormData.address?.zipCode || ""} onChange={handleEditFormChange} /></div>
-                <div className="md:col-span-2"><Label htmlFor="address.country" className="text-xs">Country</Label><Input id="address.country" name="address.country" value={editFormData.address?.country || ""} onChange={handleEditFormChange} /></div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div><Label htmlFor="specialization">Specialization</Label><Input id="specialization" name="specialization" value={editFormData.specialization || ""} onChange={handleEditFormChange} /></div>
-                <div><Label htmlFor="licenseNumber">License Number</Label><Input id="licenseNumber" name="licenseNumber" value={editFormData.licenseNumber || ""} onChange={handleEditFormChange} /></div>
-                <div>
-                  <Label htmlFor="department">Department</Label>
-                  <Select name="department" value={editFormData.department || ""} onValueChange={(value) => handleEditSelectChange("department", value)}>
-                    <SelectTrigger><SelectValue placeholder="Select Department" /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="">None (No Department)</SelectItem>
-                      {departments.map(dept => <SelectItem key={dept._id} value={dept._id}>{dept.name}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label htmlFor="isActive">Status</Label>
-                  <Select name="isActive" value={editFormData.isActive ? "true" : "false"} onValueChange={(value) => handleEditSelectChange("isActive", value === "true")}>
-                    <SelectTrigger><SelectValue placeholder="Select Status" /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="true">Active</SelectItem>
-                      <SelectItem value="false">Inactive</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                 <div><Label htmlFor="profileImage">Profile Image URL</Label><Input id="profileImage" name="profileImage" value={editFormData.profileImage || ""} onChange={handleEditFormChange} placeholder="Enter URL for profile image"/></div>
-              </div>
-              
-              <DialogFooter className="pt-4">
-                <DialogClose asChild><Button type="button" variant="outline">Cancel</Button></DialogClose>
-                <Button type="submit" disabled={isLoading}>{isLoading ? "Saving..." : "Save Changes"}</Button>
-              </DialogFooter>
-            </form>
-          )}
-        </DialogContent>
-      </Dialog>
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
+      <div className="fixed inset-0 bg-black/50" />
+      <div className="relative bg-white rounded-lg shadow-lg max-w-md w-full mx-4">{children}</div>
     </div>
-  );
+  )
+}
+
+const DialogContent = ({ children, className }: { children: React.ReactNode; className?: string }) => {
+  return <div className={`p-6 ${className || ""}`}>{children}</div>
+}
+
+const DialogHeader = ({ children }: { children: React.ReactNode }) => {
+  return <div className="mb-4">{children}</div>
+}
+
+const DialogTitle = ({ children }: { children: React.ReactNode }) => {
+  return <h2 className="text-lg font-semibold text-gray-900">{children}</h2>
+}
+
+const DialogDescription = ({ children }: { children: React.ReactNode }) => {
+  return <p className="text-sm text-gray-600 mt-1">{children}</p>
+}
+
+const DialogFooter = ({ children }: { children: React.ReactNode }) => {
+  return <div className="flex justify-end space-x-2 mt-6">{children}</div>
+}
+
+export default function DoctorsPage() {
+  const [doctors, setDoctors] = useState<Doctor[]>([])
+  const [loading, setLoading] = useState(true)
+  const [searchTerm, setSearchTerm] = useState("")
+  const [specialtyFilter, setSpecialtyFilter] = useState<string>("all")
+  const [sortBy, setSortBy] = useState("lastName")
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc")
+  const [currentPage, setCurrentPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
+  const [totalDoctors, setTotalDoctors] = useState(0)
+  const [selectedDoctor, setSelectedDoctor] = useState<Doctor | null>(null)
+  const [editDialogOpen, setEditDialogOpen] = useState(false)
+  const [addDialogOpen, setAddDialogOpen] = useState(false)
+  const [departmentMap, setDepartmentMap] = useState<Record<string, string>>({});
+  const [specialties, setSpecialties] = useState<string[]>([])
+  const [editFormData, setEditFormData] = useState({
+    firstName: "",
+    lastName: "",
+    email: "",
+    password: "",
+    phone: "",
+    specialization: "",
+    schedule: "",
+    isActive: true,
+  })
+  const { toast } = useToast()
+
+  const limit = 10
+
+
+  const fetchSpecialties = async () => {
+    try {
+      const response = await fetch("/api/departments");
+      const data = await response.json();
+
+      if (response.ok) {
+        // Extract specialties from the departments
+        const fetchedSpecialties = data.departments.map((department: { name: string }) => department.name);
+        setSpecialties(fetchedSpecialties);
+
+        const map = data.departments.reduce((acc: Record<string, string>, department: { _id: string; name: string }) => {
+          acc[department.name] = department._id;
+          return acc;
+        }, {});
+        setDepartmentMap(map);
+      } else {
+        throw new Error(data.message || "Failed to fetch specialties");
+      }
+    } catch (error) {
+      console.error("Error fetching specialties:", error);
+    }
+  };
+
+  useEffect(() => {
+    fetchSpecialties();
+  }, []);
+
+  const fetchDoctors = async () => {
+    setLoading(true)
+    try {
+
+      const params = new URLSearchParams({
+        page: currentPage.toString(),
+        limit: limit.toString(),
+        sortBy,
+        order: sortOrder,
+      })
+      if (searchTerm) {
+        params.append("search", searchTerm)
+      }
+
+      if (specialtyFilter && specialtyFilter !== "all") {
+        params.append("specialization", specialtyFilter)
+      }
+
+      const response = await fetch(`/api/admin/doctors?${params}`)
+      const data: DoctorsResponse = await response.json()
+
+      setDoctors(data.doctors);
+      setTotalPages(data.totalPages);
+      setTotalDoctors(data.totalDoctors);
+
+      console.log("Fetched doctors:", data)
+
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to fetch doctors",
+        variant: "destructive",
+      })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchDoctors()
+  }, [currentPage, sortBy, sortOrder, searchTerm, specialtyFilter])
+
+  // Update doctor
+  const updateDoctor = async () => {
+    if (!selectedDoctor) return
+
+    try {
+      setDoctors((prev) => prev.map((d) => (d._id === selectedDoctor._id ? { ...d, ...editFormData } : d)))
+
+      toast({
+        title: "Success",
+        description: "Doctor updated successfully",
+      })
+      setEditDialogOpen(false)
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to update doctor",
+        variant: "destructive",
+      })
+    }
+  }
+
+  // Add new doctor
+  const addDoctor = async () => {
+    try {
+
+      if (!editFormData.firstName || !editFormData.lastName || !editFormData.email || !editFormData.specialization) {
+        toast({
+          title: "Error",
+          description: "Please fill in all required fields",
+          variant: "destructive",
+        })
+        return
+      }
+
+      const departmentId = departmentMap[editFormData.specialization];
+      if (!departmentId) {
+        toast({
+          title: "Error",
+          description: "Invalid specialization. Please select a valid department.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+
+      // Prepare data with correct field names for backend
+      const doctorData = {
+        firstName: editFormData.firstName,
+        lastName: editFormData.lastName,
+        email: editFormData.email,
+        password: editFormData.password,
+        specialization: editFormData.specialization, // Send department ID
+        department: departmentId,
+        phoneNumber: editFormData.phone, // Map to phoneNumber
+        schedule: editFormData.schedule,
+        isActive: editFormData.isActive,
+      }
+
+      const response = await fetch("/api/admin/doctors", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(doctorData), // Send form data to the backend
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        // throw new Error(data.message || "Failed to add doctor");
+        console.log("Error adding doctor:", data.message || "Failed to add doctor");
+      }
+
+      toast({
+        title: "Success",
+        description: "Doctor added successfully",
+      })
+      setAddDialogOpen(false)
+      resetForm()
+      fetchDoctors();
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to add doctor",
+        variant: "destructive",
+      })
+    }
+  }
+
+  const handleSort = (column: string) => {
+    if (sortBy === column) {
+      setSortOrder(sortOrder === "asc" ? "desc" : "asc")
+    } else {
+      setSortBy(column)
+      setSortOrder("asc")
+    }
+  }
+
+  const openEditDialog = (doctor: Doctor) => {
+    setSelectedDoctor(doctor)
+    setEditFormData({
+      firstName: doctor.firstName,
+      lastName: doctor.lastName,
+      email: doctor.email,
+      password: "",
+      phone: doctor.phoneNumber,
+      specialization: doctor.specialization,
+      schedule: doctor.schedule || "Mon-Fri, 9am-5pm",
+      isActive: doctor.isActive,
+    })
+    setEditDialogOpen(true)
+  }
+
+  const openAddDialog = () => {
+    resetForm()
+    setAddDialogOpen(true)
+  }
+
+  const resetForm = () => {
+    setEditFormData({
+      firstName: "",
+      lastName: "",
+      email: "",
+      password: "",
+      phone: "",
+      specialization: "",
+      schedule: "Mon-Fri, 9am-5pm",
+      isActive: true,
+    })
+  }
+
+  const closeEditDialog = () => {
+    setEditDialogOpen(false)
+    setSelectedDoctor(null)
+  }
+
+  const closeAddDialog = () => {
+    setAddDialogOpen(false)
+    resetForm()
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50/50">
+      <div className="flex-1 space-y-8 p-8 pt-6">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-3xl font-bold tracking-tight text-gray-900">Doctor Management</h2>
+          </div>
+        </div>
+
+        {/* Search */}
+        <div className="flex items-center space-x-4">
+          <div className="relative flex-1 max-w-md">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+            <Input
+              placeholder="Search doctors by name or specialty"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10 h-12 bg-white border-gray-200 focus:border-gray-300 focus:ring-gray-300 text-base"
+            />
+          </div>
+
+          <Select
+            value={specialtyFilter}
+            onValueChange={setSpecialtyFilter}
+            className="w-[180px] h-12 bg-white border-gray-200 focus:border-gray-300 focus:ring-gray-300 text-base"
+          >
+            <SelectContent className="]">
+              <SelectItem value="all">All Specialties</SelectItem>
+              {specialties.map((specialization) => (
+                <SelectItem key={specialization} value={specialization}>
+                  {specialization}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Button variant="outline" size="sm" onClick={fetchDoctors} className="h-12 w-12 p-0 border-gray-200">
+            <RefreshCw className="h-4 w-4" />
+          </Button>
+        </div>
+
+        {/* Doctor List Card */}
+        <Card className="border-0 shadow-sm bg-white">
+          <CardHeader className="px-6 py-5 border-b border-gray-100">
+            <CardTitle className="text-lg font-semibold text-gray-900">Doctor List</CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            <div className="overflow-hidden">
+              <Table>
+                <TableHeader>
+                  <TableRow className="border-b border-gray-100 hover:bg-transparent">
+                    <TableHead
+                      className="h-14 px-6 text-left text-sm font-medium text-gray-700 cursor-pointer hover:bg-gray-50/50 transition-colors"
+                      onClick={() => handleSort("lastName")}
+                    >
+                      Name {sortBy === "lastName" && (sortOrder === "asc" ? "↑" : "↓")}
+                    </TableHead>
+                    <TableHead
+                      className="h-14 px-6 text-left text-sm font-medium text-gray-700 cursor-pointer hover:bg-gray-50/50 transition-colors"
+                      onClick={() => handleSort("specialization")}
+                    >
+                      Specialty {sortBy === "specialization" && (sortOrder === "asc" ? "↑" : "↓")}
+                    </TableHead>
+                    <TableHead className="h-14 px-6 text-left text-sm font-medium text-gray-700">Contact</TableHead>
+                    <TableHead className="h-14 px-6 text-left text-sm font-medium text-gray-700">Schedule</TableHead>
+                    <TableHead className="h-14 px-6 text-left text-sm font-medium text-gray-700">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {loading ? (
+                    Array.from({ length: 5 }).map((_, index) => (
+                      <TableRow key={index} className="border-b border-gray-50">
+                        <TableCell className="h-16 px-6 animate-pulse">
+                          <div className="h-4 bg-gray-200 rounded w-32"></div>
+                        </TableCell>
+                        <TableCell className="h-16 px-6 animate-pulse">
+                          <div className="h-4 bg-gray-200 rounded w-24"></div>
+                        </TableCell>
+                        <TableCell className="h-16 px-6 animate-pulse">
+                          <div className="h-4 bg-gray-200 rounded w-32"></div>
+                        </TableCell>
+                        <TableCell className="h-16 px-6 animate-pulse">
+                          <div className="h-4 bg-gray-200 rounded w-28"></div>
+                        </TableCell>
+                        <TableCell className="h-16 px-6 animate-pulse">
+                          <div className="h-4 bg-gray-200 rounded w-16"></div>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  ) : doctors.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={5} className="h-32 text-center text-gray-500">
+                        No doctors found
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    doctors.map((doctor) => (
+                      <TableRow
+                        key={doctor._id} // Use `_id` as the unique key
+                        className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors"
+                      >
+                        <TableCell className="h-16 px-6">
+                          <div className="font-medium text-gray-900">
+                            Dr. {doctor.firstName || "N/A"} {doctor.lastName || "N/A"}
+                          </div>
+                        </TableCell>
+                        <TableCell className="h-16 px-6">
+                          <div className="text-gray-600">{doctor.specialization || "N/A"}</div>
+                        </TableCell>
+                        <TableCell className="h-16 px-6">
+                          <div className="text-gray-600">{doctor.phoneNumber || "N/A"}</div>
+                        </TableCell>
+                        <TableCell className="h-16 px-6">
+                          <div className="text-gray-600">{doctor.department?.name || "N/A"}</div>
+                        </TableCell>
+                        <TableCell className="h-16 px-6">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => openEditDialog(doctor)}
+                            className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                          >
+                            Edit
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+
+            {/* Pagination */}
+            <div className="flex items-center justify-between px-6 py-4 border-t border-gray-100">
+              <div className="text-sm text-gray-500">
+                Showing {(currentPage - 1) * limit + 1} to {Math.min(currentPage * limit, totalDoctors)} of{" "}
+                {totalDoctors} doctors
+              </div>
+              <div className="flex items-center space-x-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                  disabled={currentPage === 1}
+                  className="h-8 px-3 text-gray-600 border-gray-200 hover:bg-gray-50"
+                >
+                  Previous
+                </Button>
+                <div className="flex items-center space-x-1">
+                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                    const page = i + 1
+                    return (
+                      <Button
+                        key={page}
+                        variant={currentPage === page ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setCurrentPage(page)}
+                        className={`w-8 h-8 p-0 ${currentPage === page
+                          ? "bg-gray-900 hover:bg-gray-800"
+                          : "border-gray-200 hover:bg-gray-50 text-gray-600"
+                          }`}
+                      >
+                        {page}
+                      </Button>
+                    )
+                  })}
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                  disabled={currentPage === totalPages}
+                  className="h-8 px-3 text-gray-600 border-gray-200 hover:bg-gray-50"
+                >
+                  Next
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Add New Doctor Button */}
+        <div className="flex justify-end">
+          <Button onClick={openAddDialog} className="bg-gray-900 hover:bg-gray-800">
+            Add New Doctor
+          </Button>
+        </div>
+
+        {/* Edit Doctor Dialog */}
+        <Dialog open={editDialogOpen}>
+          <DialogContent className="sm:max-w-[500px]">
+            <DialogHeader>
+              <div className="flex items-center justify-between">
+                <DialogTitle>Edit Doctor</DialogTitle>
+                <Button variant="ghost" size="sm" onClick={closeEditDialog} className="h-6 w-6 p-0">
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+              <DialogDescription>Make changes to the doctor profile here.</DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="firstName">First Name</Label>
+                  <Input
+                    id="firstName"
+                    value={editFormData.firstName}
+                    onChange={(e) => setEditFormData((prev) => ({ ...prev, firstName: e.target.value }))}
+                    className="mt-1"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="lastName">Last Name</Label>
+                  <Input
+                    id="lastName"
+                    value={editFormData.lastName}
+                    onChange={(e) => setEditFormData((prev) => ({ ...prev, lastName: e.target.value }))}
+                    className="mt-1"
+                  />
+                </div>
+              </div>
+              <div>
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={editFormData.email}
+                  onChange={(e) => setEditFormData((prev) => ({ ...prev, email: e.target.value }))}
+                  className="mt-1"
+                />
+              </div>
+              <div>
+                <Label htmlFor="password">Password</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  value={editFormData.password}
+                  onChange={(e) => setEditFormData((prev) => ({ ...prev, password: e.target.value }))}
+                  className="mt-1"
+                  placeholder="Leave empty to keep current password"
+                />
+              </div>
+              <div>
+                <Label htmlFor="phone">Phone</Label>
+                <Input
+                  id="phone"
+                  value={editFormData.phone}
+                  onChange={(e) => setEditFormData((prev) => ({ ...prev, phone: e.target.value }))}
+                  className="mt-1"
+                />
+              </div>
+              <div>
+                <Label htmlFor="specialization">specialization</Label>
+                <Select
+                  value={editFormData.specialization}
+                  onValueChange={(value) => setEditFormData((prev) => ({ ...prev, specialization: value }))}
+                >
+                  <SelectContent>
+                    {specialties.map((specialization) => (
+                      <SelectItem key={specialization} value={specialization}>
+                        {specialization}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="schedule">Schedule</Label>
+                <Input
+                  id="schedule"
+                  value={editFormData.schedule}
+                  onChange={(e) => setEditFormData((prev) => ({ ...prev, schedule: e.target.value }))}
+                  className="mt-1"
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={closeEditDialog}>
+                Cancel
+              </Button>
+              <Button onClick={updateDoctor}>Save changes</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Add Doctor Dialog */}
+        <Dialog open={addDialogOpen}>
+          <DialogContent className="sm:max-w-[500px]">
+            <DialogHeader>
+              <div className="flex items-center justify-between">
+                <DialogTitle>Add New Doctor</DialogTitle>
+                <Button variant="ghost" size="sm" onClick={closeAddDialog} className="h-6 w-6 p-0">
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+              <DialogDescription>Add a new doctor to the system.</DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="addFirstName">First Name</Label>
+                  <Input
+                    id="addFirstName"
+                    value={editFormData.firstName}
+                    onChange={(e) => setEditFormData((prev) => ({ ...prev, firstName: e.target.value }))}
+                    className="mt-1"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="addLastName">Last Name</Label>
+                  <Input
+                    id="addLastName"
+                    value={editFormData.lastName}
+                    onChange={(e) => setEditFormData((prev) => ({ ...prev, lastName: e.target.value }))}
+                    className="mt-1"
+                  />
+                </div>
+              </div>
+              <div>
+                <Label htmlFor="addEmail">Email</Label>
+                <Input
+                  id="addEmail"
+                  type="email"
+                  value={editFormData.email}
+                  onChange={(e) => setEditFormData((prev) => ({ ...prev, email: e.target.value }))}
+                  className="mt-1"
+                />
+              </div>
+              <div>
+                <Label htmlFor="password">Password</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  value={editFormData.password}
+                  onChange={(e) => setEditFormData((prev) => ({ ...prev, password: e.target.value }))}
+                  className="mt-1"
+                  placeholder="Enter a secure password"
+                />
+              </div>
+              <div>
+                <Label htmlFor="addPhone">Phone</Label>
+                <Input
+                  id="addPhone"
+                  value={editFormData.phone}
+                  onChange={(e) => setEditFormData((prev) => ({ ...prev, phone: e.target.value }))}
+                  className="mt-1"
+                  placeholder="+251 911 234 567"
+                />
+              </div>
+              <div>
+                <Label htmlFor="addSpecialty">Specialty</Label>
+                <Select
+                  value={editFormData.specialization}
+                  onValueChange={(value) => setEditFormData((prev) => ({ ...prev, specialization: value }))}
+                >
+                  <SelectContent>
+                    {specialties.map((specialization) => (
+                      <SelectItem key={specialization} value={specialization}>
+                        {specialization}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="addSchedule">Schedule</Label>
+                <Input
+                  id="addSchedule"
+                  value={editFormData.schedule}
+                  onChange={(e) => setEditFormData((prev) => ({ ...prev, schedule: e.target.value }))}
+                  className="mt-1"
+                  placeholder="Mon-Fri, 9am-5pm"
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={closeAddDialog}>
+                Cancel
+              </Button>
+              <Button onClick={addDoctor}>Add Doctor</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </div>
+    </div>
+  )
 }

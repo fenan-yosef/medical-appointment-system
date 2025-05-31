@@ -1,18 +1,33 @@
 "use client"
-import { useState, useRef } from "react"
+
+import type React from "react"
+
+import { useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { signOut, useSession } from "next-auth/react" // Import useSession
-import { LayoutDashboard, Calendar, Users, FileText, Settings, LogOut, ChevronDown, Menu, X, PanelLeft, PanelRight, UserPlus, CalendarPlus } from "lucide-react"
+import { signOut, useSession } from "next-auth/react"
+import {
+    LayoutDashboard,
+    Calendar,
+    Users,
+    FileText,
+    Settings,
+    LogOut,
+    Menu,
+    X,
+    UserPlus,
+    CalendarPlus,
+    MessageCircle,
+    HeartPulse,
+} from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
 // Define the NavItem type
 interface NavItem {
-    name: string;
-    href: string;
-    icon: React.ComponentType<{ className?: string }>;
-    subItems?: NavItem[];
+    name: string
+    href: string
+    icon: React.ComponentType<{ className?: string }>
 }
 
 // Define lists for each role
@@ -23,6 +38,11 @@ const adminNavItems: NavItem[] = [
         icon: LayoutDashboard,
     },
     {
+        name: "Services",
+        href: "/dashboard/admin/services",
+        icon: HeartPulse,
+    },
+    {
         name: "Appointments",
         href: "/dashboard/admin/appointments",
         icon: Calendar,
@@ -31,15 +51,16 @@ const adminNavItems: NavItem[] = [
         name: "Patients",
         href: "/dashboard/admin/patients",
         icon: Users,
-        subItems: [
-            { name: "All Patients", href: "/dashboard/admin/patients", icon: Users },
-            { name: "Add Patient", href: "/dashboard/admin/patients/add", icon: UserPlus },
-        ],
     },
     {
         name: "Doctors",
         href: "/dashboard/admin/doctors",
         icon: FileText,
+    },
+    {
+        name: "Messages",
+        href: "/dashboard/admin/messages",
+        icon: MessageCircle,
     },
     {
         name: "Settings",
@@ -65,10 +86,15 @@ const receptionistNavItems: NavItem[] = [
         icon: CalendarPlus,
     },
     {
+        name: "Messages",
+        href: "/dashboard/receptionist/messages",
+        icon: MessageCircle,
+    },
+    {
         name: "Settings",
         href: "/dashboard/settings",
         icon: Settings,
-    }
+    },
 ]
 
 const patientNavItems: NavItem[] = [
@@ -93,6 +119,11 @@ const patientNavItems: NavItem[] = [
         icon: FileText,
     },
     {
+        name: "Messages",
+        href: "/dashboard/patient/messages",
+        icon: MessageCircle,
+    },
+    {
         name: "Settings",
         href: "/dashboard/settings",
         icon: Settings,
@@ -100,65 +131,38 @@ const patientNavItems: NavItem[] = [
 ]
 
 interface SidebarProps {
-    user: { // Renamed initialUser back to user
+    user: {
         name?: string | null
         email?: string | null
         role?: string | null
     }
 }
 
-export function Sidebar({ user }: SidebarProps) { // Use user instead of initialUser
+export function Sidebar({ user }: SidebarProps) {
     const pathname = usePathname() || ""
-    const { data: clientSession, status: clientStatus } = useSession() // Call useSession
+    const { data: clientSession, status: clientStatus } = useSession()
     const [isOpen, setIsOpen] = useState(false)
-    const [collapsed, setCollapsed] = useState(false)
-    const [sidebarWidth, setSidebarWidth] = useState(256)
-    const resizing = useRef(false)
 
     const toggleSidebar = () => setIsOpen(!isOpen)
     const closeSidebar = () => setIsOpen(false)
-    const toggleCollapse = () => setCollapsed(prev => !prev)
 
-    const handleMouseDown = (e: React.MouseEvent) => {
-        resizing.current = true
-        document.body.style.cursor = "col-resize"
-    }
-    const handleMouseMove = (e: MouseEvent) => {
-        if (resizing.current) {
-            const newWidth = Math.max(180, Math.min(400, e.clientX))
-            setSidebarWidth(newWidth)
-        }
-    }
-    const handleMouseUp = () => {
-        resizing.current = false
-        document.body.style.cursor = ""
-    }
-    if (typeof window !== "undefined") {
-        window.onmousemove = resizing.current ? handleMouseMove : null
-        window.onmouseup = resizing.current ? handleMouseUp : null
-    }
-
-    console.log("Sidebar: user:", user);
-    console.log("Sidebar: clientSession:", clientSession);
-
-    // Determine effectiveUser based on clientSession and initialUser
-    let effectiveUser = user; // Changed from initialUser
+    // Determine effective user
+    let effectiveUser = user
     if (clientStatus === "authenticated" && clientSession?.user?.role) {
         effectiveUser = {
-            name: clientSession.user.name || user.name, // Changed from initialUser.name
-            email: clientSession.user.email || user.email, // Changed from initialUser.email
-            role: clientSession.user.role, // Prioritize client-side role
-        };
+            name: clientSession.user.name || user.name,
+            email: clientSession.user.email || user.email,
+            role: clientSession.user.role,
+        }
     } else if (clientStatus === "authenticated" && clientSession?.user) {
         effectiveUser = {
-            name: clientSession.user.name || user.name, // Changed from initialUser.name
-            email: clientSession.user.email || user.email, // Changed from initialUser.email
-            role: user.role, // Fallback to initialUser's role if client's is missing // Changed from initialUser.role
-        };
+            name: clientSession.user.name || user.name,
+            email: clientSession.user.email || user.email,
+            role: user.role,
+        }
     }
 
-
-    // Choose nav items based on the effectiveUser's role
+    // Choose nav items based on role
     let currentNavItems: NavItem[] = []
     switch (effectiveUser?.role) {
         case "admin":
@@ -171,112 +175,95 @@ export function Sidebar({ user }: SidebarProps) { // Use user instead of initial
             currentNavItems = patientNavItems
             break
         default:
-            // console.log("Sidebar: Role not found or session loading, using default (admin) nav items. Effective user:", effectiveUser);
-            currentNavItems = adminNavItems // Default fallback
+            currentNavItems = adminNavItems
+    }
+
+    // Get user title based on role
+    const getUserTitle = (role: string | null | undefined) => {
+        switch (role) {
+            case "admin":
+                return "Administrator"
+            case "receptionist":
+                return "Receptionist"
+            case "patient":
+                return "Patient"
+            default:
+                return "User"
+        }
     }
 
     return (
         <>
             {/* Mobile menu button */}
-            <Button variant="ghost" size="icon" className="fixed top-4 left-4 z-50 md:hidden" onClick={toggleSidebar}>
-                {isOpen ? <X /> : <Menu />}
+            <Button
+                variant="ghost"
+                size="icon"
+                className="fixed top-4 left-4 z-50 md:hidden bg-white shadow-md"
+                onClick={toggleSidebar}
+            >
+                {isOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
             </Button>
+
+            {/* Mobile overlay */}
             {isOpen && <div className="fixed inset-0 bg-black/50 z-40 md:hidden" onClick={closeSidebar} />}
+
+            {/* Sidebar */}
             <aside
                 className={cn(
-                    "fixed inset-y-0 left-0 z-50 bg-white border-r border-gray-200 transition-all duration-300 ease-in-out flex flex-col",
+                    "fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-gray-100 transition-transform duration-300 ease-in-out flex flex-col",
                     isOpen ? "translate-x-0" : "-translate-x-full",
-                    "md:translate-x-0"
+                    "md:translate-x-0",
                 )}
-                style={{
-                    width: collapsed ? 64 : sidebarWidth,
-                    minWidth: collapsed ? 64 : 180,
-                    maxWidth: collapsed ? 64 : 400,
-                }}
             >
-                <div className="flex items-center h-16 px-4 border-b border-gray-200 justify-between">
-                    <div className="flex items-center space-x-2 ml-9">
-                        {!collapsed && <span className="text-xl font-semibold">SDLM</span>}
-                    </div>
-                    <Button variant="ghost" size="icon" className="ml-2" onClick={toggleCollapse} title={collapsed ? "Expand sidebar" : "Collapse sidebar"}>
-                        {collapsed ? <PanelRight /> : <PanelLeft />}
-                    </Button>
-                </div>
-                <nav className={cn("flex-1 overflow-y-auto py-4", collapsed ? "px-1" : "px-3")}>
-                    <ul className="space-y-1">
-                        {currentNavItems.map(item => {
-                            const isActive = pathname === item.href || (item.href && pathname.startsWith(`${item.href}/`))
-                            return (
-                                <li key={item.name}>
-                                    {item.subItems ? (
-                                        <div className="mb-2">
-                                            <button
-                                                className={cn(
-                                                    "flex items-center w-full px-2 py-2 text-sm font-medium rounded-md",
-                                                    isActive ? "bg-blue-50 text-blue-700" : "text-gray-700 hover:bg-gray-100",
-                                                    collapsed && "justify-center"
-                                                )}
-                                            >
-                                                <item.icon className="mr-0 md:mr-3 h-5 w-5" />
-                                                {!collapsed && <span>{item.name}</span>}
-                                                {!collapsed && <ChevronDown className="ml-auto h-4 w-4" />}
-                                            </button>
-                                            {!collapsed && item.subItems && (
-                                                <ul className="mt-1 pl-10 space-y-1">
-                                                    {item.subItems.map(subItem => (
-                                                        <li key={subItem.name}>
-                                                            <Link
-                                                                href={subItem.href}
-                                                                className={cn(
-                                                                    "block px-3 py-2 text-sm font-medium rounded-md",
-                                                                    pathname === subItem.href ? "bg-blue-50 text-blue-700" : "text-gray-700 hover:bg-gray-100"
-                                                                )}
-                                                                onClick={closeSidebar}
-                                                            >
-                                                                {subItem.name}
-                                                            </Link>
-                                                        </li>
-                                                    ))}
-                                                </ul>
-                                            )}
-                                        </div>
-                                    ) : (
-                                        <Link
-                                            href={item.href}
-                                            className={cn(
-                                                "flex items-center px-2 py-2 text-sm font-medium rounded-md",
-                                                isActive ? "bg-blue-50 text-blue-700" : "text-gray-700 hover:bg-gray-100",
-                                                collapsed && "justify-center"
-                                            )}
-                                            onClick={closeSidebar}
-                                        >
-                                            <item.icon className="mr-0 md:mr-3 h-5 w-5" />
-                                            {!collapsed && <span>{item.name}</span>}
-                                        </Link>
-                                    )}
-                                </li>
-                            )
-                        })}
-                    </ul>
-                </nav>
-                {!collapsed && <div className="absolute top-0 right-0 h-full w-2 cursor-col-resize z-50" onMouseDown={handleMouseDown} style={{ userSelect: "none" }} />}
-                <div className={cn("p-4 border-t border-gray-200 flex items-center", collapsed && "justify-center p-2")}>
-                    <div className="flex items-center w-full">
-                        <div className="flex-shrink-0">
-                            <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center">
-                                <span className="text-gray-600 font-medium">{effectiveUser?.name?.charAt(0) || "U"}</span>
-                            </div>
+                {/* Profile Section */}
+                <div className="p-6 border-b border-gray-100">
+                    <div className="flex items-center space-x-3">
+                        <div className="relative">
+                            <img
+                                src={`https://picsum.photos/seed/${effectiveUser?.name || "user"}/40/40`}
+                                alt={effectiveUser?.name || "User"}
+                                className="w-10 h-10 rounded-full object-cover"
+                            />
                         </div>
-                        {!collapsed && (
-                            <div className="ml-3 min-w-0 flex-1">
-                                <p className="text-sm font-medium text-gray-900 truncate">{effectiveUser?.name || "User"}</p>
-                                <p className="text-xs text-gray-500 truncate">{effectiveUser?.email || "user@example.com"}</p>
-                            </div>
-                        )}
-                        <Button variant="ghost" size="icon" onClick={() => signOut({ callbackUrl: "/login" })} title="Logout">
-                            <LogOut className="h-5 w-5 text-gray-500" />
-                        </Button>
+                        <div className="flex-1 min-w-0">
+                            <h3 className="text-sm font-semibold text-gray-900 truncate">{effectiveUser?.name || "User Name"}</h3>
+                            <p className="text-xs text-gray-500 truncate">{getUserTitle(effectiveUser?.role)}</p>
+                        </div>
                     </div>
+                </div>
+
+                {/* Navigation */}
+                <nav className="flex-1 px-4 py-6 space-y-1">
+                    {currentNavItems.map((item) => {
+                        const isActive = pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href))
+
+                        return (
+                            <Link
+                                key={item.name}
+                                href={item.href}
+                                onClick={closeSidebar}
+                                className={cn(
+                                    "flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-colors",
+                                    isActive ? "bg-gray-100 text-gray-900" : "text-gray-600 hover:bg-gray-50 hover:text-gray-900",
+                                )}
+                            >
+                                <item.icon className="mr-3 h-5 w-5" />
+                                {item.name}
+                            </Link>
+                        )
+                    })}
+                </nav>
+
+                {/* Logout Button */}
+                <div className="p-4 border-t border-gray-100">
+                    <Button
+                        variant="ghost"
+                        onClick={() => signOut({ callbackUrl: "/login" })}
+                        className="w-full justify-start text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+                    >
+                        <LogOut className="mr-3 h-5 w-5" />
+                        Logout
+                    </Button>
                 </div>
             </aside>
         </>
