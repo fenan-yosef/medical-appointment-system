@@ -145,38 +145,30 @@ export default function PatientDashboard() {
                     ) : (
                         <div className="space-y-6">
                             {appointments.map((appointment) => (
-                                <div
-                                    key={appointment._id}
-                                    className="cursor-pointer transition-all hover:shadow-md"
-                                    onClick={() => router.push(`/dashboard/patient/appointments/${appointment._id}`)}
-                                >
-                                    <Card className="border hover:border-blue-500">
-                                        <div className="flex items-center border rounded-lg overflow-hidden">
-                                            <div className="flex-1 p-6">
-                                                <div className="text-sm text-gray-500 mb-1">Appointment</div>
-                                                <h3 className="text-lg font-medium">
-                                                    Dr. {appointment.doctor.firstName} {appointment.doctor.lastName}
-                                                </h3>
-                                                <p className="text-gray-600">{appointment.department.name}</p>
+                                <div key={appointment._id} className="flex items-center border rounded-lg overflow-hidden">
+                                    <div className="flex-1 p-6">
+                                        <div className="text-sm text-gray-500 mb-1">Appointment</div>
+                                        <h3 className="text-lg font-medium">
+                                            Dr. {appointment.doctor.firstName} {appointment.doctor.lastName}
+                                        </h3>
+                                        <p className="text-gray-600">{appointment.department.name}</p>
 
-                                                <div className="mt-4 inline-flex items-center px-3 py-1 bg-gray-100 rounded-full text-sm">
-                                                    <Calendar className="h-4 w-4 mr-2" />
-                                                    {formatDate(appointment.date)}
-                                                    <span className="mx-2">•</span>
-                                                    <Clock className="h-4 w-4 mr-2" />
-                                                    {formatTime(appointment.time.start)}
-                                                </div>
-                                            </div>
-
-                                            <div className="w-64 h-32 bg-teal-500 flex-shrink-0">
-                                                <img
-                                                    src={getAppointmentImage(appointment.department.name) || "/placeholder.svg"}
-                                                    alt={`Dr. ${appointment.doctor.firstName} ${appointment.doctor.lastName}`}
-                                                    className="w-full h-full object-cover"
-                                                />
-                                            </div>
+                                        <div className="mt-4 inline-flex items-center px-3 py-1 bg-gray-100 rounded-full text-sm">
+                                            <Calendar className="h-4 w-4 mr-2" />
+                                            {formatDate(appointment.date)}
+                                            <span className="mx-2">•</span>
+                                            <Clock className="h-4 w-4 mr-2" />
+                                            {formatTime(appointment.time.start)}
                                         </div>
-                                    </Card>
+                                    </div>
+
+                                    <div className="w-64 h-32 bg-teal-500 flex-shrink-0">
+                                        <img
+                                            src={getAppointmentImage(appointment.department.name) || "/placeholder.svg"}
+                                            alt={`Dr. ${appointment.doctor.firstName} ${appointment.doctor.lastName}`}
+                                            className="w-full h-full object-cover"
+                                        />
+                                    </div>
                                 </div>
                             ))}
                         </div>
@@ -201,51 +193,43 @@ export default function PatientDashboard() {
                     ) : (
                         <div className="space-y-6">
                             {appointments.map((appointment) => (
-                                <div
-                                    key={appointment._id}
-                                    className="cursor-pointer transition-all hover:shadow-md"
-                                    onClick={() => router.push(`/dashboard/patient/appointments/${appointment._id}`)}
-                                >
-                                    <Card className="border hover:border-blue-500">
-                                        <div className="flex items-center border rounded-lg overflow-hidden">
-                                            <div className="flex-1 p-6">
-                                                <div className="text-sm text-gray-500 mb-1">Appointment</div>
-                                                <h3 className="text-lg font-medium">
-                                                    Dr. {appointment.doctor.firstName} {appointment.doctor.lastName}
-                                                </h3>
-                                                <p className="text-gray-600">{appointment.department.name}</p>
+                                <div key={appointment._id} className="flex items-center border rounded-lg overflow-hidden">
+                                    <div className="flex-1 p-6">
+                                        <div className="text-sm text-gray-500 mb-1">Appointment</div>
+                                        <h3 className="text-lg font-medium">
+                                            Dr. {appointment.doctor.firstName} {appointment.doctor.lastName}
+                                        </h3>
+                                        <p className="text-gray-600">{appointment.department.name}</p>
 
-                                                <div className="mt-4 inline-flex items-center px-3 py-1 bg-gray-100 rounded-full text-sm">
-                                                    <Calendar className="h-4 w-4 mr-2" />
-                                                    {formatDate(appointment.date)}
-                                                    <span className="mx-2">•</span>
-                                                    <Clock className="h-4 w-4 mr-2" />
-                                                    {formatTime(appointment.time.start)}
-                                                </div>
-
-                                                <div className="mt-2">
-                                                    <span
-                                                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${appointment.status === "completed"
-                                                                ? "bg-green-100 text-green-800"
-                                                                : appointment.status === "cancelled"
-                                                                    ? "bg-red-100 text-red-800"
-                                                                    : "bg-yellow-100 text-yellow-800"
-                                                            }`}
-                                                    >
-                                                        {appointment.status.charAt(0).toUpperCase() + appointment.status.slice(1)}
-                                                    </span>
-                                                </div>
-                                            </div>
-
-                                            <div className="w-64 h-32 bg-teal-500 flex-shrink-0">
-                                                <img
-                                                    src={getAppointmentImage(appointment.department.name) || "/placeholder.svg"}
-                                                    alt={`Dr. ${appointment.doctor.firstName} ${appointment.doctor.lastName}`}
-                                                    className="w-full h-full object-cover"
-                                                />
-                                            </div>
+                                        <div className="mt-4 inline-flex items-center px-3 py-1 bg-gray-100 rounded-full text-sm">
+                                            <Calendar className="h-4 w-4 mr-2" />
+                                            {formatDate(appointment.date)}
+                                            <span className="mx-2">•</span>
+                                            <Clock className="h-4 w-4 mr-2" />
+                                            {formatTime(appointment.time.start)}
                                         </div>
-                                    </Card>
+
+                                        <div className="mt-2">
+                                            <span
+                                                className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${appointment.status === "completed"
+                                                        ? "bg-green-100 text-green-800"
+                                                        : appointment.status === "cancelled"
+                                                            ? "bg-red-100 text-red-800"
+                                                            : "bg-yellow-100 text-yellow-800"
+                                                    }`}
+                                            >
+                                                {appointment.status.charAt(0).toUpperCase() + appointment.status.slice(1)}
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    <div className="w-64 h-32 bg-teal-500 flex-shrink-0">
+                                        <img
+                                            src={getAppointmentImage(appointment.department.name) || "/placeholder.svg"}
+                                            alt={`Dr. ${appointment.doctor.firstName} ${appointment.doctor.lastName}`}
+                                            className="w-full h-full object-cover"
+                                        />
+                                    </div>
                                 </div>
                             ))}
                         </div>

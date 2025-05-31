@@ -4,8 +4,10 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import connectToDatabase from "@/lib/db";
 import User from "@/models/User";
 import bcrypt from "bcryptjs";
+import { NextAuthOptions } from "next-auth"; // Import NextAuthOptions type
 
-const handler = NextAuth({
+// Define authOptions separately and then use it in NextAuth
+export const authOptions: NextAuthOptions = { // Export authOptions here
     providers: [
         CredentialsProvider({
             name: "Credentials",
@@ -20,7 +22,7 @@ const handler = NextAuth({
                     // 1. Find user
                     const user = (await User.findOne({ email: credentials?.email })
                         .select("+password")
-                        .lean()) as any; // <-- Cast to any to avoid TS property errors
+                        .lean()) as any;
 
                     if (!user) {
                         console.log("No user found with this email");
@@ -57,8 +59,8 @@ const handler = NextAuth({
         },
         async session({ session, token }) {
             if (token) {
-                session.user.id = token.id;
-                session.user.role = token.role;
+                session.user.id = token.id as string; // Ensure id is string
+                session.user.role = token.role as string; // Ensure role is string
             }
             return session;
         },
@@ -68,6 +70,9 @@ const handler = NextAuth({
         error: "/login",
     },
     secret: process.env.NEXTAUTH_SECRET,
-});
+};
+
+// The NextAuth handler uses the authOptions
+const handler = NextAuth(authOptions);
 
 export { handler as GET, handler as POST };
