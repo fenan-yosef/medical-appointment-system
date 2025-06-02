@@ -69,6 +69,8 @@ export default function BookAppointmentDate() {
                 }
                 const data = await response.json()
 
+                console.log("Doctor fetched: ", data)
+
                 if (data.success && data.data) {
                     setDoctor(data.data)
                     // The department object is already populated within the doctor object
@@ -280,7 +282,7 @@ export default function BookAppointmentDate() {
                     <div>
                         <h2 className="text-lg font-medium mb-4">Select Date</h2>
                         <Card>
-                            <CardContent className="p-4 flex justify-center">
+                            <CardContent className="p-4">
                                 <Calendar
                                     mode="single"
                                     selected={date}
