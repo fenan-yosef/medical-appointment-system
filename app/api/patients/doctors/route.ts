@@ -7,9 +7,13 @@ export async function GET(request: NextRequest) {
     try {
         await dbConnect()
         const { searchParams } = new URL(request.url)
-        const department = searchParams.get("department")
+        const department = searchParams.get("specialty")
 
         const query: any = { role: "doctor", isActive: true }
+
+        if (department) {
+            query.department = department
+        }
 
 
         const doctors = await User.find(query)

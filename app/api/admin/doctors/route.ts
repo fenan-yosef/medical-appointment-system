@@ -94,6 +94,7 @@ export async function POST(req: NextRequest) {
     await connectToDatabase();
 
     const body = await req.json();
+    console.log("Request body for creating doctor:", body);
     const {
       firstName,
       lastName,
@@ -108,6 +109,7 @@ export async function POST(req: NextRequest) {
       gender,
       profileImage,
       isActive = true, // Default to true
+      schedule,
     } = body;
 
     console.log("Creating doctor with body:", body);
@@ -160,11 +162,13 @@ export async function POST(req: NextRequest) {
       gender,
       profileImage,
       isActive,
+      schedule,
       emailVerified: new Date(), // Consider new doctors created by admin as email verified
       createdAt: new Date(),
       updatedAt: new Date(),
     });
 
+    console.log('New doctor object before saving:', newDoctor);
     await newDoctor.save();
 
     // Exclude password from response

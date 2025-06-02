@@ -220,7 +220,7 @@ export default function DoctorsPage() {
         password: editFormData.password,
         specialization: editFormData.specialization, // Send department ID
         department: departmentId,
-        phoneNumber: editFormData.phone, // Map to phoneNumber
+        phoneNumber: editFormData.phone,
         schedule: editFormData.schedule,
         isActive: editFormData.isActive,
       }
@@ -422,7 +422,7 @@ export default function DoctorsPage() {
                           <div className="text-gray-600">{doctor.phoneNumber || "N/A"}</div>
                         </TableCell>
                         <TableCell className="h-16 px-6">
-                          <div className="text-gray-600">{doctor.department?.name || "N/A"}</div>
+                          <div className="text-gray-600">{doctor.schedule || "N/A"}</div>
                         </TableCell>
                         <TableCell className="h-16 px-6">
                           <Button

@@ -53,6 +53,9 @@ const UserSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: "Department",
     },
+    schedule: {
+        type: String,
+    },
     emergencyContact: {
         name: String,
         relationship: String,

@@ -26,7 +26,7 @@ export default function BookAppointmentSpecialty() {
     const router = useRouter()
     const { toast } = useToast()
     const [searchTerm, setSearchTerm] = useState("")
-    const [selectedSpecialty, setSelectedSpecialty] = useState<string | null>(null)
+    const [selectedDepartmentId, setSelectedDepartmentId] = useState<string | null>(null)
     const [specialties, setSpecialties] = useState<Specialty[]>([]) // Initialize as empty array
     const [loading, setLoading] = useState(true) // Add loading state
 
@@ -41,11 +41,13 @@ export default function BookAppointmentSpecialty() {
                 }
                 const data = await response.json() // Expects { departments: ApiDepartment[] }
 
+                // console.log("Departments fetched: ", data)
                 if (data.departments && Array.isArray(data.departments)) {
                     const mappedSpecialties: Specialty[] = data.departments.map((dept: ApiDepartment) => ({
                         id: dept._id,
                         name: dept.name,
                     }))
+                    console.log("Mapped specialties: ", mappedSpecialties)
                     setSpecialties(mappedSpecialties)
                 } else {
                     setSpecialties([])
@@ -76,7 +78,7 @@ export default function BookAppointmentSpecialty() {
     )
 
     const handleSpecialtySelect = (specialtyId: string) => {
-        setSelectedSpecialty(specialtyId)
+        setSelectedDepartmentId(specialtyId)
         // Navigate to the doctor selection page, passing the department ID as 'specialty'
         router.push(`/dashboard/patient/appointments/book/doctor?specialty=${specialtyId}`)
     }
@@ -139,7 +141,7 @@ export default function BookAppointmentSpecialty() {
                                 className="focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded-lg"
                             >
                                 <Card
-                                    className={`cursor-pointer transition-all hover:border-blue-500 h-full flex flex-col justify-center ${selectedSpecialty === specialty.id ? "border-blue-500 ring-2 ring-blue-500" : "border-gray-200"
+                                    className={`cursor-pointer transition-all hover:border-blue-500 h-full flex flex-col justify-center ${selectedDepartmentId === specialty.id ? "border-blue-500 ring-2 ring-blue-500" : "border-gray-200"
                                         }`}
                                 >
                                     <CardContent className="p-6 flex items-center justify-center text-center">
@@ -154,8 +156,8 @@ export default function BookAppointmentSpecialty() {
                 <div className="mt-8">
                     <Button
                         onClick={() => {
-                            if (selectedSpecialty) {
-                                router.push(`/dashboard/patient/appointments/book/doctor?specialty=${selectedSpecialty}`)
+                            if (selectedDepartmentId) {
+                                router.push(`/dashboard/patient/appointments/book/doctor?specialty=${selectedDepartmentId}`)
                             } else {
                                 toast({
                                     title: "Please select a specialty",
@@ -164,7 +166,7 @@ export default function BookAppointmentSpecialty() {
                             }
                         }}
                         className="w-full md:w-auto"
-                        disabled={!selectedSpecialty || loading}
+                        disabled={!selectedDepartmentId || loading}
                     >
                         Next
                     </Button>
