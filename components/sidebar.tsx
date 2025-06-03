@@ -69,49 +69,11 @@ const adminNavItems: NavItem[] = [
     // },
 ]
 
-const receptionistNavItems: NavItem[] = [
+const doctorNavItems: NavItem[] = [
     {
         name: "Dashboard",
         href: "/dashboard/receptionist",
         icon: LayoutDashboard,
-    },
-    {
-        name: "Add Patient",
-        href: "/dashboard/receptionist/add-patient",
-        icon: UserPlus,
-    },
-    {
-        name: "Schedule Appointment",
-        href: "/dashboard/receptionist/schedule-appointment",
-        icon: CalendarPlus,
-    },
-    {
-        name: "Messages",
-        href: "/dashboard/receptionist/messages",
-        icon: MessageCircle,
-    },
-    {
-        name: "Settings",
-        href: "/dashboard/settings",
-        icon: Settings,
-    },
-]
-
-const patientNavItems: NavItem[] = [
-    // {
-    //     name: "Dashboard",
-    //     href: "/dashboard/patient",
-    //     icon: LayoutDashboard,
-    // },
-    {
-        name: "My Appointments",
-        href: "/dashboard/patient",
-        icon: Calendar,
-    },
-    {
-        name: "My Profile",
-        href: "/dashboard/profile",
-        icon: Users,
     },
     {
         name: "Medical Records",
@@ -119,15 +81,58 @@ const patientNavItems: NavItem[] = [
         icon: FileText,
     },
     {
-        name: "Messages",
-        href: "/dashboard/patient/messages",
-        icon: MessageCircle,
+        name: "My Profile",
+        href: "/dashboard/profile",
+        icon: Users,
     },
+    // {
+    //     name: "Add Patient",
+    //     href: "/dashboard/receptionist/add-patient",
+    //     icon: UserPlus,
+    // },
+    // {
+    //     name: "Schedule Appointment",
+    //     href: "/dashboard/receptionist/schedule-appointment",
+    //     icon: CalendarPlus,
+    // },
+    // {
+    //     name: "Messages",
+    //     href: "/dashboard/receptionist/messages",
+    //     icon: MessageCircle,
+    // },
+    // {
+    //     name: "Settings",
+    //     href: "/dashboard/settings",
+    //     icon: Settings,
+    // },
+]
+
+const patientNavItems: NavItem[] = [
     {
-        name: "Settings",
-        href: "/dashboard/settings",
-        icon: Settings,
+        name: "Appontments",
+        href: "/dashboard/patient",
+        icon: LayoutDashboard,
     },
+    // {
+    //     name: "My Appointments",
+    //     href: "/dashboard/patient",
+    //     icon: Calendar,
+    // },
+    {
+        name: "My Profile",
+        href: "/dashboard/profile",
+        icon: Users,
+    },
+    // {
+    //     name: "Messages",
+    //     href: "/dashboard/patient/messages",
+    //     icon: MessageCircle,
+    // },
+    // {
+    //     name: "Settings",
+    //     href: "/dashboard/settings",
+    //     icon: Settings,
+    // },
 ]
 
 interface SidebarProps {
@@ -168,8 +173,8 @@ export function Sidebar({ user }: SidebarProps) {
         case "admin":
             currentNavItems = adminNavItems
             break
-        case "receptionist":
-            currentNavItems = receptionistNavItems
+        case "doctor":
+            currentNavItems = doctorNavItems
             break
         case "patient":
             currentNavItems = patientNavItems

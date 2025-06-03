@@ -32,49 +32,44 @@ const AppointmentSchema = new mongoose.Schema({
     },
     status: {
         type: String,
-        enum: ["scheduled", "completed", "cancelled", "no-show"],
+        enum: ["scheduled", "confirmed", "completed", "cancelled", "no-show", "rescheduled"],
         default: "scheduled",
     },
     type: {
         type: String,
-        enum: ["initial", "follow-up", "emergency", "routine", "specialist"],
+        enum: ["initial", "follow-up", "emergency", "consultation"],
         default: "initial",
     },
     reason: {
         type: String,
         required: true,
     },
-    notes: String,
-    symptoms: [String],
-    diagnosis: [String],
-    prescription: [
-        {
-            medication: String,
-            dosage: String,
-            frequency: String,
-            duration: String,
-            notes: String,
-        },
-    ],
+    notes: {
+        type: String,
+    },
+    // Private notes only accessible to the doctor
+    doctorNotes: {
+        type: String,
+    },
+    // Patient contact information snapshot
+    patientContact: {
+        phone: String,
+        email: String,
+    },
     attachments: [
         {
-            name: String,
+            filename: String,
             url: String,
-            type: String,
             uploadedAt: {
                 type: Date,
                 default: Date.now,
             },
         },
     ],
-    followUpRequired: {
-        type: Boolean,
-        default: false,
-    },
-    followUpDate: Date,
     createdBy: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "User",
+        required: true,
     },
     createdAt: {
         type: Date,
@@ -84,30 +79,11 @@ const AppointmentSchema = new mongoose.Schema({
         type: Date,
         default: Date.now,
     },
-    insuranceDetails: {
-        provider: String,
-        policyNumber: String,
-        coverage: String,
-        authorizationCode: String,
-    },
-    billingStatus: {
-        type: String,
-        enum: ["pending", "billed", "paid", "partially-paid", "insurance-pending"],
-        default: "pending",
-    },
-    paymentDetails: {
-        amount: Number,
-        method: String,
-        transactionId: String,
-        paidAt: Date,
-    },
-    reminders: [
-        {
-            type: String,
-            sentAt: Date,
-            method: String, // email, sms, etc.
-        },
-    ],
 })
+
+// Indexes for efficient queries
+AppointmentSchema.index({ doctor: 1, date: 1 })
+AppointmentSchema.index({ patient: 1, date: 1 })
+AppointmentSchema.index({ status: 1, date: 1 })
 
 export default mongoose.models.Appointment || mongoose.model("Appointment", AppointmentSchema)
