@@ -58,15 +58,15 @@ const adminNavItems: NavItem[] = [
         icon: FileText,
     },
     {
-        name: "Messages",
-        href: "/dashboard/admin/messages",
-        icon: MessageCircle,
+        name: "My Profile",
+        href: "/dashboard/profile",
+        icon: Users,
     },
-    {
-        name: "Settings",
-        href: "/dashboard/admin/settings",
-        icon: Settings,
-    },
+    // {
+    //     name: "Settings",
+    //     href: "/dashboard/admin/settings",
+    //     icon: Settings,
+    // },
 ]
 
 const receptionistNavItems: NavItem[] = [
@@ -98,19 +98,19 @@ const receptionistNavItems: NavItem[] = [
 ]
 
 const patientNavItems: NavItem[] = [
-    {
-        name: "Dashboard",
-        href: "/dashboard/patient",
-        icon: LayoutDashboard,
-    },
+    // {
+    //     name: "Dashboard",
+    //     href: "/dashboard/patient",
+    //     icon: LayoutDashboard,
+    // },
     {
         name: "My Appointments",
-        href: "/dashboard/patient/appointments",
+        href: "/dashboard/patient",
         icon: Calendar,
     },
     {
         name: "My Profile",
-        href: "/dashboard/patient/profile",
+        href: "/dashboard/profile",
         icon: Users,
     },
     {

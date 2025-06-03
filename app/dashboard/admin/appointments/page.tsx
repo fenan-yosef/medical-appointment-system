@@ -28,7 +28,7 @@ import {
   DialogFooter,
   DialogClose,
 } from "@/components/ui/dialog";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { ChevronLeft, ChevronRight, Eye, Edit, Trash2, CalendarIcon, Search, XCircle } from "lucide-react";
 import { Label } from "@/components/ui/label";
 // Assuming a DatePicker component might exist or can be added later
@@ -527,7 +527,9 @@ export default function AdminAppointmentsPage() {
             </div>
           )}
           <DialogFooter>
-            <DialogClose asChild><Button variant="outline">Close</Button></DialogClose>
+            <DialogClose asChild>
+              <Button variant="outline" onClick={() => setIsViewModalOpen(false)}>Close</Button>
+            </DialogClose>
           </DialogFooter>
         </DialogContent>
       </Dialog>

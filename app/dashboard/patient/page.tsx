@@ -90,18 +90,39 @@ export default function PatientDashboard() {
         return `${hour12}:${minutes} ${ampm}`
     }
 
-    const getAppointmentImage = (specialty: string) => {
-        // Return different doctor images based on specialty
-        const specialtyMap: Record<string, string> = {
-            Cardiology: "/images/doctor-cardiology.png",
-            Dermatology: "/images/doctor-dermatology.png",
-            Pediatrics: "/images/doctor-pediatrics.png",
-            Neurology: "/images/doctor-neurology.png",
-            Orthopedics: "/images/doctor-orthopedics.png",
-        }
 
-        return specialtyMap[specialty] || "/images/doctor-default.png"
-    }
+    const getAppointmentImage = (specialty: string): string => {
+        // Lorem Picsum provides random images.
+        // You can use a seed for somewhat consistent "randomness" for the same specialty.
+        // A simple hash of the specialty name can serve as a seed.
+        // For a simple hash, you could convert the string to a number.
+        const getHashOfString = (str: string): number => {
+            let hash = 0;
+            for (let i = 0; i < str.length; i++) {
+                const char = str.charCodeAt(i);
+                hash = ((hash << 5) - hash) + char;
+                hash |= 0; // Convert to 32bit integer
+            }
+            return Math.abs(hash); // Ensure positive
+        };
+
+        const seed = getHashOfString(specialty.toLowerCase());
+
+        // Lorem Picsum format: https://picsum.photos/seed/{seed}/width/height
+        // You can adjust width and height as needed.
+        const width = 400; // Example width
+        const height = 300; // Example height, suitable for doctor portraits
+
+        // Map common specialties to specific seeds or just use a generic random for all
+        // For simplicity, we'll just use the hash of the specialty.
+        // If you want specific images for specific specialties, you'd need more control,
+        // possibly by using a smaller range of seeds or hand-picking image IDs if Lorem Picsum allowed it easily (it doesn't directly).
+
+        // Using Lorem Picsum with a seed based on the specialty name
+        // return `https://picsum.photos/seed/doctor/40/40`;
+        // Alternative: purely random image (different image every time)
+        return `https://picsum.photos/seed/${width}/${height}`;
+    };
 
     return (
         <div className="container mx-auto px-4 py-8">
@@ -148,7 +169,7 @@ export default function PatientDashboard() {
                                 <div
                                     key={appointment._id}
                                     className="cursor-pointer transition-all hover:shadow-md"
-                                    onClick={() => router.push(`/dashboard/patient/appointments/${appointment._id}`)}
+                                    onClick={() => router.push(`/ dashboard / patient / appointments / ${appointment._id} `)}
                                 >
                                     <Card className="border hover:border-blue-500">
                                         <div className="flex items-center border rounded-lg overflow-hidden">
@@ -170,8 +191,8 @@ export default function PatientDashboard() {
 
                                             <div className="w-64 h-32 bg-teal-500 flex-shrink-0">
                                                 <img
-                                                    src={getAppointmentImage(appointment.department.name) || "/placeholder.svg"}
-                                                    alt={`Dr. ${appointment.doctor.firstName} ${appointment.doctor.lastName}`}
+                                                    src={"https://media.istockphoto.com/id/1156528509/vector/medical-insurance-template-best-doctors.jpg?s=612x612&w=0&k=20&c=k_XigjFLO9PjA5z1Nyu3LJotZiTPjnDf1p5fw90KuUM="}
+                                                    alt={`Dr.${appointment.doctor.firstName} ${appointment.doctor.lastName} `}
                                                     className="w-full h-full object-cover"
                                                 />
                                             </div>
@@ -204,7 +225,7 @@ export default function PatientDashboard() {
                                 <div
                                     key={appointment._id}
                                     className="cursor-pointer transition-all hover:shadow-md"
-                                    onClick={() => router.push(`/dashboard/patient/appointments/${appointment._id}`)}
+                                    onClick={() => router.push(`/ dashboard / patient / appointments / ${appointment._id} `)}
                                 >
                                     <Card className="border hover:border-blue-500">
                                         <div className="flex items-center border rounded-lg overflow-hidden">
@@ -225,12 +246,12 @@ export default function PatientDashboard() {
 
                                                 <div className="mt-2">
                                                     <span
-                                                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${appointment.status === "completed"
+                                                        className={`inline - flex items - center px - 2.5 py - 0.5 rounded - full text - xs font - medium ${appointment.status === "completed"
                                                             ? "bg-green-100 text-green-800"
                                                             : appointment.status === "cancelled"
                                                                 ? "bg-red-100 text-red-800"
                                                                 : "bg-yellow-100 text-yellow-800"
-                                                            }`}
+                                                            } `}
                                                     >
                                                         {appointment.status.charAt(0).toUpperCase() + appointment.status.slice(1)}
                                                     </span>
@@ -240,7 +261,7 @@ export default function PatientDashboard() {
                                             <div className="w-64 h-32 bg-teal-500 flex-shrink-0">
                                                 <img
                                                     src={getAppointmentImage(appointment.department.name) || "/placeholder.svg"}
-                                                    alt={`Dr. ${appointment.doctor.firstName} ${appointment.doctor.lastName}`}
+                                                    alt={`Dr.${appointment.doctor.firstName} ${appointment.doctor.lastName} `}
                                                     className="w-full h-full object-cover"
                                                 />
                                             </div>

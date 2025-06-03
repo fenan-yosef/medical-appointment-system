@@ -118,9 +118,9 @@ export default function PatientDashboard() {
         // possibly by using a smaller range of seeds or hand-picking image IDs if Lorem Picsum allowed it easily (it doesn't directly).
 
         // Using Lorem Picsum with a seed based on the specialty name
-        return `https://picsum.photos/seed/doctor/40/40`;
+        return `https://picsum.photos/seed/doctor/500/500`;
         // Alternative: purely random image (different image every time)
-        // return `https://picsum.photos/${width}/${height}`;
+        // return `https://picsum.photos/${seed}${width}/${height}`;
     };
 
 

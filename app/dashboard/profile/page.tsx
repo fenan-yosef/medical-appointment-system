@@ -18,7 +18,7 @@ interface UserProfile {
     firstName: string
     lastName: string
     email: string
-    phone?: string
+    phoneNumber?: string
     address?: string
     role: string
     specialization?: string
@@ -64,6 +64,7 @@ export default function ProfilePage() {
             const data = await response.json()
 
             if (data.success) {
+                console.log("Fetched profile data:", data.data)
                 setProfile(data.data)
                 setFormData(data.data)
             } else {
@@ -106,6 +107,9 @@ export default function ProfilePage() {
         setSaving(true)
 
         try {
+
+            // console.log("Submitting profile data:", formData)
+
             const response = await fetch("/api/profile", {
                 method: "PUT",
                 headers: {
@@ -114,8 +118,12 @@ export default function ProfilePage() {
                 body: JSON.stringify(formData),
             })
 
+
+
             const data = await response.json()
 
+            // console.log("Profile update response:", data)
+            // console.log("Success boolean:", data.success)
             if (data.success) {
                 setProfile(data.data)
                 toast({
@@ -242,8 +250,8 @@ export default function ProfilePage() {
                                     <Label htmlFor="phone">Phone Number</Label>
                                     <Input
                                         id="phone"
-                                        value={formData.phone || ""}
-                                        onChange={(e) => handleInputChange("phone", e.target.value)}
+                                        value={formData.phoneNumber || ""}
+                                        onChange={(e) => handleInputChange("phoneNumber", e.target.value)}
                                     />
                                 </div>
                                 {profile.role === "patient" && (
