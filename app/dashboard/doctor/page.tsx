@@ -131,7 +131,7 @@ export default function DoctorDashboard() {
                 params.append("date", new Date().toISOString().split("T")[0])
             }
 
-            const response = await fetch(`/api/doctor/appointments?${params}`)
+            const response = await fetch(`/api/doctors/appointments?${params}`)
             const data = await response.json()
 
             if (data.success) {
@@ -172,7 +172,7 @@ export default function DoctorDashboard() {
 
     const updateAppointmentStatus = async (appointmentId: string, status: string) => {
         try {
-            const response = await fetch(`/api/doctor/appointments/${appointmentId}`, {
+            const response = await fetch(`/api/doctors/appointments/${appointmentId}`, {
                 method: "PUT",
                 headers: {
                     "Content-Type": "application/json",
@@ -204,7 +204,7 @@ export default function DoctorDashboard() {
         if (!selectedAppointment) return
 
         try {
-            const response = await fetch(`/api/doctor/appointments/${selectedAppointment._id}`, {
+            const response = await fetch(`/api/doctors/appointments/${selectedAppointment._id}`, {
                 method: "PUT",
                 headers: {
                     "Content-Type": "application/json",

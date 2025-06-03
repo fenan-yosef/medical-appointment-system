@@ -72,7 +72,7 @@ const adminNavItems: NavItem[] = [
 const doctorNavItems: NavItem[] = [
     {
         name: "Dashboard",
-        href: "/dashboard/receptionist",
+        href: "/dashboard/doctor",
         icon: LayoutDashboard,
     },
     {

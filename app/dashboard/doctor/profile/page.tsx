@@ -79,7 +79,7 @@ export default function DoctorProfilePage() {
     const fetchProfile = async () => {
         setLoading(true)
         try {
-            const response = await fetch("/api/doctor/profile")
+            const response = await fetch("/api/doctors/profile")
             const data = await response.json()
 
             if (data.success) {
@@ -141,7 +141,7 @@ export default function DoctorProfilePage() {
         setSaving(true)
 
         try {
-            const response = await fetch("/api/doctor/profile", {
+            const response = await fetch("/api/doctors/profile", {
                 method: "PUT",
                 headers: {
                     "Content-Type": "application/json",
@@ -195,7 +195,7 @@ export default function DoctorProfilePage() {
         setChangingPassword(true)
 
         try {
-            const response = await fetch("/api/doctor/password", {
+            const response = await fetch("/api/doctors/password", {
                 method: "PUT",
                 headers: {
                     "Content-Type": "application/json",
