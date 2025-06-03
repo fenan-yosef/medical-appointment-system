@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth/next"
 import dbConnect from "@/lib/db"
 import Appointment from "@/models/Appointment"
+import { NotificationService } from "@/lib/services/notificationService"
 import { authOptions } from "@/app/api/auth/[...nextauth]/route"
 
 // GET all appointments for the logged-in patient
@@ -83,7 +84,22 @@ export async function POST(request: NextRequest) {
       status: "scheduled",
     })
 
+
+
     await appointment.save()
+
+    try {
+      await NotificationService.createAppointmentNotification(
+        {
+          ...appointment.toObject(),
+          patient: session.user.id,
+        },
+        "appointment_created",
+      )
+    } catch (notificationError) {
+      console.error("Failed to create notification:", notificationError)
+      // Don't fail the appointment creation if notification fails
+    }
 
     return NextResponse.json({ success: true, data: appointment }, { status: 201 })
   } catch (error: any) {

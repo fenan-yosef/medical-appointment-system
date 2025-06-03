@@ -50,7 +50,7 @@ export default function PatientDashboard() {
     const fetchAppointments = async (status: string) => {
         setLoading(true)
         try {
-            const response = await fetch(`/api/patient/appointments?status=${status}`)
+            const response = await fetch(`/api/patients/appointments?status=${status}`)
             const data = await response.json()
 
             if (data.success) {
@@ -226,10 +226,10 @@ export default function PatientDashboard() {
                                                 <div className="mt-2">
                                                     <span
                                                         className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${appointment.status === "completed"
-                                                                ? "bg-green-100 text-green-800"
-                                                                : appointment.status === "cancelled"
-                                                                    ? "bg-red-100 text-red-800"
-                                                                    : "bg-yellow-100 text-yellow-800"
+                                                            ? "bg-green-100 text-green-800"
+                                                            : appointment.status === "cancelled"
+                                                                ? "bg-red-100 text-red-800"
+                                                                : "bg-yellow-100 text-yellow-800"
                                                             }`}
                                                     >
                                                         {appointment.status.charAt(0).toUpperCase() + appointment.status.slice(1)}
