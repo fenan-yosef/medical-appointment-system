@@ -5,8 +5,18 @@ import User from "@/models/User";
 import Department from "@/models/Department"; // To validate and populate department
 import { getToken } from "next-auth/jwt";
 
+// Define a more explicit type for the context containing params
+interface RouteContext {
+  params: {
+    id: string;
+  };
+}
+
 // GET handler for fetching a single doctor's profile by ID (Admin)
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(request: NextRequest, context: RouteContext) {
+  const { params } = context; // Destructure params from context
+  const { id } = params; // Destructure id from params
+
   try {
     const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET });
     // @ts-ignore
@@ -15,7 +25,6 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
     }
 
     await connectToDatabase();
-    const { id } = params;
 
     if (!id.match(/^[0-9a-fA-F]{24}$/)) {
       return NextResponse.json({ message: "Invalid doctor ID format." }, { status: 400 });
@@ -41,7 +50,10 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
 }
 
 // PUT handler for updating a doctor's profile (Admin)
-export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(request: NextRequest, context: RouteContext) {
+  const { params } = context; // Destructure params from context
+  const { id } = params; // Destructure id from params
+
   try {
     const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET });
     // @ts-ignore
@@ -51,7 +63,6 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
 
     await connectToDatabase();
     const resolvedParams = await params;
-    const { id } = resolvedParams;
 
     if (!id.match(/^[0-9a-fA-F]{24}$/)) {
       return NextResponse.json({ message: "Invalid doctor ID format." }, { status: 400 });
