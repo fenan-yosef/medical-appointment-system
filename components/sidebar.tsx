@@ -75,11 +75,11 @@ const doctorNavItems: NavItem[] = [
         href: "/dashboard/doctor",
         icon: LayoutDashboard,
     },
-    {
-        name: "Medical Records",
-        href: "/dashboard/patient/records",
-        icon: FileText,
-    },
+    // {
+    //     name: "Medical Records",
+    //     href: "/dashboard/patient/records",
+    //     icon: FileText,
+    // },
     {
         name: "My Profile",
         href: "/dashboard/profile",
