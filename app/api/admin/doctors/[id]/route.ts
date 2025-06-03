@@ -50,7 +50,8 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
     }
 
     await connectToDatabase();
-    const { id } = params;
+    const resolvedParams = await params;
+    const { id } = resolvedParams;
 
     if (!id.match(/^[0-9a-fA-F]{24}$/)) {
       return NextResponse.json({ message: "Invalid doctor ID format." }, { status: 400 });
@@ -75,6 +76,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
       gender,
       profileImage,
       specialization,
+      schedule,
       licenseNumber,
       department, // Department ID
       isActive,
@@ -100,6 +102,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
     if (gender !== undefined) updateFields.gender = gender;
     if (profileImage !== undefined) updateFields.profileImage = profileImage;
     if (specialization !== undefined) updateFields.specialization = specialization;
+    if (schedule !== undefined) updateFields.schedule = schedule;
     if (licenseNumber !== undefined) updateFields.licenseNumber = licenseNumber;
     if (isActive !== undefined) updateFields.isActive = isActive;
 

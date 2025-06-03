@@ -53,6 +53,8 @@ export default function PatientDashboard() {
             const response = await fetch(`/api/patients/appointments?status=${status}`)
             const data = await response.json()
 
+            console.log("Appointmenmts fetched: ", data)
+
             if (data.success) {
                 setAppointments(data.data)
             } else {
@@ -130,7 +132,7 @@ export default function PatientDashboard() {
                 <h1 className="text-3xl font-bold">My Appointments</h1>
                 <Button
                     onClick={() => router.push("/dashboard/patient/appointments/book")}
-                    className="bg-blue-600 hover:bg-blue-700"
+                    className="bg-blue-500 hover:bg-blue-700"
                 >
                     <Plus className="mr-2 h-4 w-4" /> Book Appointment
                 </Button>

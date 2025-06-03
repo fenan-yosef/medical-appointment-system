@@ -64,35 +64,71 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { doctor, department, date, time, reason, type } = body
-
-    // Validate required fields
-    if (!doctor || !department || !date || !time || !reason) {
-      return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
-    }
-
-    // Create appointment
-    const appointment = new Appointment({
-      patient: session.user.id,
+    // Destructure all fields you expect from the frontend, including new ones
+    const {
       doctor,
       department,
       date,
+      time, // { start: string, end: string }
+      reason,
+      type, // "initial", "follow-up", etc.
+      notes,
+      symptoms, // [String]
+      diagnosis, // [String]
+      prescription, // Array of objects
+      attachments, // Array of objects
+      followUpRequired, // Boolean
+      followUpDate, // Date string
+      insuranceDetails, // Object
+      billingStatus, // String enum
+      paymentDetails, // Object
+      reminders, // Array of objects
+      // createdBy will be set from session
+      // status will be defaulted
+    } = body
+
+    // Validate required fields (adjust based on your schema's 'required: true' fields)
+    // The original schema you provided had 'reason' as required.
+    // 'patient', 'doctor', 'department', 'date', 'time' are also essential.
+    if (!doctor || !department || !date || !time || !time.start || !time.end || !reason) {
+      return NextResponse.json({ error: "Missing required fields (doctor, department, date, time, reason)" }, { status: 400 })
+    }
+
+    // Create appointment with all fields
+    const appointmentData: any = {
+      patient: session.user.id,
+      doctor,
+      department,
+      date: new Date(date), // Ensure date is stored as a Date object
       time,
       reason,
-      type: type || "initial",
+      type: type || "initial", // Default if not provided
+      status: "scheduled", // Default status
       createdBy: session.user.id,
-      status: "scheduled",
-    })
+    };
 
+    // Add optional fields if they are provided in the request body
+    if (notes !== undefined) appointmentData.notes = notes;
+    if (symptoms !== undefined) appointmentData.symptoms = symptoms;
+    if (diagnosis !== undefined) appointmentData.diagnosis = diagnosis;
+    if (prescription !== undefined) appointmentData.prescription = prescription;
+    if (attachments !== undefined) appointmentData.attachments = attachments;
+    if (followUpRequired !== undefined) appointmentData.followUpRequired = followUpRequired;
+    if (followUpDate !== undefined) appointmentData.followUpDate = new Date(followUpDate);
+    if (insuranceDetails !== undefined) appointmentData.insuranceDetails = insuranceDetails;
+    if (billingStatus !== undefined) appointmentData.billingStatus = billingStatus;
+    if (paymentDetails !== undefined) appointmentData.paymentDetails = paymentDetails;
+    if (reminders !== undefined) appointmentData.reminders = reminders;
 
+    const appointment = new Appointment(appointmentData);
 
     await appointment.save()
 
     try {
       await NotificationService.createAppointmentNotification(
         {
-          ...appointment.toObject(),
-          patient: session.user.id,
+          ...appointment.toObject(), // Send the full appointment object
+          patient: session.user.id, // Ensure patient ID is correctly passed if needed by service
         },
         "appointment_created",
       )
@@ -103,6 +139,11 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true, data: appointment }, { status: 201 })
   } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    console.error("Error creating appointment:", error); // Log the full error
+    // Check for Mongoose validation errors specifically
+    if (error.name === 'ValidationError') {
+      return NextResponse.json({ error: "Validation Error", details: error.errors }, { status: 400 });
+    }
+    return NextResponse.json({ error: error.message || "Internal server error" }, { status: 500 })
   }
 }

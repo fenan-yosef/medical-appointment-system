@@ -240,8 +240,26 @@ export function Sidebar({ user }: SidebarProps) {
                 {/* Navigation */}
                 <nav className="flex-1 px-4 py-6 space-y-1">
                     {currentNavItems.map((item) => {
-                        const isActive = pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href))
+                        const mainRoleDashboardHrefs = [
+                            "/dashboard/admin",
+                            "/dashboard/doctor", // Assuming doctor's dashboard is /dashboard/doctor
+                            "/dashboard/patient",
+                            "/dashboard/receptionist" // If receptionist has a separate dashboard link
+                        ];
 
+                        let isActive;
+                        // If the current item is a main "Dashboard" link for a role
+                        if (item.name === "Dashboard" && mainRoleDashboardHrefs.includes(item.href)) {
+                            isActive = (pathname === item.href); // Only active on exact match
+                        } else {
+                            // For all other links (e.g., "Patients", "Services", "My Profile")
+                            // It's active if the current path is an exact match or starts with the item's href
+                            // (e.g., item.href="/dashboard/admin/patients", pathname="/dashboard/admin/patients/123")
+                            isActive = pathname === item.href || pathname.startsWith(item.href + "/");
+                            // A simpler alternative for non-main dashboard links if sub-paths are always distinct:
+                            // isActive = pathname.startsWith(item.href);
+                            // However, the line above (exact match OR startsWith + "/") is generally safer.
+                        }
                         return (
                             <Link
                                 key={item.name}

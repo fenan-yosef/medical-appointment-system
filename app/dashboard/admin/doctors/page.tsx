@@ -169,24 +169,76 @@ export default function DoctorsPage() {
 
   // Update doctor
   const updateDoctor = async () => {
-    if (!selectedDoctor) return
+    if (!selectedDoctor) {
+      toast({ title: "Error", description: "No doctor selected for editing.", variant: "destructive" });
+      return;
+    }
 
     try {
-      setDoctors((prev) => prev.map((d) => (d._id === selectedDoctor._id ? { ...d, ...editFormData } : d)))
+      // Prepare the payload based on editFormData and backend expectations
+      const departmentId = departmentMap[editFormData.specialization];
+      if (editFormData.specialization && !departmentId) { // Check if specialization is set but not found in map
+        toast({
+          title: "Error",
+          description: "Invalid specialization. Please select a valid department.",
+          variant: "destructive",
+        });
+        return;
+      }
 
-      toast({
-        title: "Success",
-        description: "Doctor updated successfully",
-      })
-      setEditDialogOpen(false)
-    } catch (error) {
+      console.log("schedule: ", editFormData.schedule)
+
+      const payload: any = {
+        firstName: editFormData.firstName,
+        lastName: editFormData.lastName,
+        email: editFormData.email,
+        phoneNumber: editFormData.phone, // Matches backend field name
+        specialization: editFormData.specialization, // The string specialty name
+        schedule: editFormData.schedule,
+        isActive: editFormData.isActive,
+      };
+
+      // Only include department if a valid one is selected/derived
+      if (departmentId) {
+        payload.department = departmentId;
+      }
+
+      // Do not send password if it's empty, as per placeholder "Leave empty to keep current password"
+      // Your backend PUT route for doctors explicitly states password should not be updated there.
+      // So, we will not include 'password' in the PUT payload.
+
+      const response = await fetch(`/api/admin/doctors/${selectedDoctor._id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const responseData = await response.json();
+
+      if (response.ok && responseData.doctor) {
+        // Update local state with the updated doctor from the response
+        setDoctors((prevDoctors) =>
+          prevDoctors.map((d) => (d._id === responseData.doctor._id ? responseData.doctor : d))
+        );
+        toast({
+          title: "Success",
+          description: "Doctor updated successfully",
+        });
+        setEditDialogOpen(false);
+        setSelectedDoctor(null); // Clear selected doctor
+      } else {
+        throw new Error(responseData.message || "Failed to update doctor");
+      }
+    } catch (error: any) {
       toast({
         title: "Error",
-        description: "Failed to update doctor",
+        description: error.message || "Failed to update doctor",
         variant: "destructive",
-      })
+      });
     }
-  }
+  };
 
   // Add new doctor
   const addDoctor = async () => {
