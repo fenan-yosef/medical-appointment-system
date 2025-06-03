@@ -25,16 +25,18 @@ import {
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { Badge } from "@/components/ui/badge"
-import { Select, SelectContent, SelectItem } from "@/components/ui/select"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useToast } from "@/hooks/use-toast"
 
 interface Patient {
-  id: string
+  createdAt: string | number | Date
+  dateOfBirth: string | number | Date
+  _id: string
   firstName: string
   lastName: string
   email: string
   age: number
-  gender: string
+  gender?: string
   lastVisit: string
   isActive: boolean
   phone?: string
@@ -46,6 +48,8 @@ interface PatientsResponse {
   total: number
   page: number
   totalPages: number
+  currentPage: number,
+  totalPatients?: number,
 }
 
 export default function PatientsPage() {
@@ -62,69 +66,31 @@ export default function PatientsPage() {
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null)
   const [editDialogOpen, setEditDialogOpen] = useState(false)
   const [resetPasswordDialogOpen, setResetPasswordDialogOpen] = useState(false)
+  const [addPatientDialogOpen, setAddPatientDialogOpen] = useState(false); // New state for Add Patient dialog
   const [editFormData, setEditFormData] = useState({
+    _id: "", // To store the ID of the patient being edited
     firstName: "",
     lastName: "",
     email: "",
+    phoneNumber: "",
+    dateOfBirth: "", // Store as 'YYYY-MM-DD'
     isActive: true,
   })
+  const [addPatientFormData, setAddPatientFormData] = useState({
+    firstName: "",
+    lastName: "",
+    email: "",
+    password: "",
+    phoneNumber: "", // From your example data
+    dateOfBirth: "", // From your example data (consider a date picker for better UX)
+    gender: "", // From your example data
+    // isActive will likely default to true on creation, but you could add a switch if needed.
+    // password will be set by the backend or through a separate initial setup process
+  });
+
   const { toast } = useToast()
 
   const limit = 10
-
-  // Mock data for development
-  const mockPatients: Patient[] = [
-    {
-      id: "1",
-      firstName: "Abebe",
-      lastName: "Kebede",
-      email: "abebe.kebede@email.com",
-      age: 45,
-      gender: "male",
-      lastVisit: "2023-11-15",
-      isActive: true,
-    },
-    {
-      id: "2",
-      firstName: "Tigist",
-      lastName: "Alemayehu",
-      email: "tigist.alemayehu@email.com",
-      age: 32,
-      gender: "female",
-      lastVisit: "2023-12-02",
-      isActive: false,
-    },
-    {
-      id: "3",
-      firstName: "Tesfaye",
-      lastName: "Mekonnen",
-      email: "tesfaye.mekonnen@email.com",
-      age: 60,
-      gender: "male",
-      lastVisit: "2023-10-20",
-      isActive: true,
-    },
-    {
-      id: "4",
-      firstName: "Mulugeta",
-      lastName: "Haile",
-      email: "mulugeta.haile@email.com",
-      age: 50,
-      gender: "male",
-      lastVisit: "2023-11-28",
-      isActive: true,
-    },
-    {
-      id: "5",
-      firstName: "Aster",
-      lastName: "Mengistu",
-      email: "aster.mengistu@email.com",
-      age: 28,
-      gender: "female",
-      lastVisit: "2023-12-10",
-      isActive: true,
-    },
-  ]
 
   // Fetch patients data
   const fetchPatients = async () => {
@@ -139,10 +105,15 @@ export default function PatientsPage() {
       })
 
       if (searchTerm) {
-        params.append("name", searchTerm)
+        params.append("search", searchTerm)
       }
+
       if (statusFilter !== "all") {
         params.append("isActive", statusFilter === "active" ? "true" : "false")
+      }
+
+      if (genderFilter !== "all") { // Added gender filter
+        params.append("gender", genderFilter)
       }
 
       const response = await fetch(`/api/admin/patients?${params}`)
@@ -185,7 +156,7 @@ export default function PatientsPage() {
 
       // if (response.ok) {
       // Update mock data
-      setPatients((prev) => prev.map((p) => (p.id === patientId ? { ...p, isActive: !currentStatus } : p)))
+      setPatients((prev) => prev.map((p) => (p._id === patientId ? { ...p, isActive: !currentStatus } : p)))
 
       toast({
         title: "Success",
@@ -231,29 +202,40 @@ export default function PatientsPage() {
 
   // Update patient
   const updatePatient = async () => {
-    if (!selectedPatient) return
+    if (!editFormData._id) { // Use _id from editFormData
+      toast({ title: "Error", description: "No patient selected for editing.", variant: "destructive" });
+      return;
+    }
+
+    const { _id, ...updatePayload } = editFormData;
+    const payloadToSend: any = { ...updatePayload };
 
     try {
-      // const response = await fetch(`/api/admin/patients/${selectedPatient.id}`, {
-      //   method: "PUT",
-      //   headers: {
-      //     "Content-Type": "application/json",
-      //   },
-      //   body: JSON.stringify(editFormData),
-      // })
+      console.log("Payload to send:", payloadToSend);
+      const response = await fetch(`/api/admin/patients/${editFormData._id}`, { // Use _id
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payloadToSend), // Send the prepared payload
+      });
 
-      // if (response.ok) {
-      // Update mock data
-      setPatients((prev) => prev.map((p) => (p.id === selectedPatient.id ? { ...p, ...editFormData } : p)))
+      const responseData = await response.json();
 
-      toast({
-        title: "Success",
-        description: "Patient updated successfully",
-      })
-      setEditDialogOpen(false)
-      // } else {
-      //   throw new Error("Failed to update patient")
-      // }
+
+      if (response.ok && responseData.success) {
+        // Update local state with the updated patient from the response
+        setPatients((prevPatients) =>
+          prevPatients.map((p) => (p._id === responseData.patient._id ? responseData.patient : p))
+        );
+        toast({
+          title: "Success",
+          description: "Patient updated successfully",
+        });
+        setEditDialogOpen(false);
+      } else {
+        throw new Error(responseData.message || "Failed to update patient");
+      }
     } catch (error) {
       toast({
         title: "Error",
@@ -275,24 +257,96 @@ export default function PatientsPage() {
   const openEditDialog = (patient: Patient) => {
     setSelectedPatient(patient)
     setEditFormData({
+      _id: patient._id,
       firstName: patient.firstName,
       lastName: patient.lastName,
       email: patient.email,
       isActive: patient.isActive,
+      phoneNumber: patient.phone || "",
+      dateOfBirth: new Date(patient.dateOfBirth).toISOString().split("T")[0],
     })
     setEditDialogOpen(true)
   }
+
+  const handleAddPatient = async () => {
+    if (!addPatientFormData.firstName || !addPatientFormData.lastName || !addPatientFormData.email || !addPatientFormData.password || !addPatientFormData.dateOfBirth) {
+      toast({
+        title: "Validation Error",
+        description: "First name, last name, email, password, and date of birth are required.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      // Base payload without gender initially
+      const payload: any = {
+        firstName: addPatientFormData.firstName,
+        lastName: addPatientFormData.lastName,
+        email: addPatientFormData.email,
+        password: addPatientFormData.password,
+        phoneNumber: addPatientFormData.phoneNumber,
+        dateOfBirth: addPatientFormData.dateOfBirth,
+        role: "patient",
+      };
+
+      // Only add gender to the payload if it's not an empty string
+      if (addPatientFormData.gender && addPatientFormData.gender !== "") {
+        payload.gender = addPatientFormData.gender;
+      }
+
+      // You'll likely need a different endpoint for adding patients, e.g., /api/admin/patients/create
+      const response = await fetch("/api/register", { // Assuming POST to /api/admin/patients
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (response.ok) {
+        const newPatient: Patient = await response.json(); // Assuming the backend returns the new patient
+        setPatients((prev) => [...prev, newPatient]); // Add the new patient to the list
+        toast({
+          title: "Success",
+          description: "Patient added successfully.",
+        });
+        setAddPatientDialogOpen(false);
+        // Clear the form after successful submission
+        setAddPatientFormData({
+          firstName: "",
+          lastName: "",
+          email: "",
+          password: "",
+          phoneNumber: "",
+          dateOfBirth: "",
+          gender: "",
+        });
+        fetchPatients(); // Re-fetch to ensure pagination/sorting/filtering is correct with the new patient
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to add patient");
+      }
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to add patient.",
+        variant: "destructive",
+      });
+    }
+  };
+
 
   return (
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
       <div className="flex items-center justify-between space-y-2">
         <h2 className="text-3xl font-bold tracking-tight">Patients</h2>
         <div className="flex items-center space-x-2">
-          <Button variant="outline" size="sm">
+          {/* <Button variant="outline" size="sm">
             <Download className="mr-2 h-4 w-4" />
             Export
-          </Button>
-          <Button size="sm">
+          </Button> */}
+          <Button size="sm" onClick={() => setAddPatientDialogOpen(true)}> {/* Add this onClick */}
             <UserPlus className="mr-2 h-4 w-4" />
             Add Patient
           </Button>
@@ -350,7 +404,7 @@ export default function PatientsPage() {
                     className="h-12 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-50/50 transition-colors"
                     onClick={() => handleSort("age")}
                   >
-                    Age {sortBy === "age" && (sortOrder === "asc" ? "↑" : "↓")}
+                    Registered {sortBy === "age" && (sortOrder === "asc" ? "↑" : "↓")}
                   </TableHead>
                   <TableHead className="h-12 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Gender
@@ -365,7 +419,7 @@ export default function PatientsPage() {
                     className="h-12 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-50/50 transition-colors"
                     onClick={() => handleSort("lastVisit")}
                   >
-                    Last Visit {sortBy === "lastVisit" && (sortOrder === "asc" ? "↑" : "↓")}
+                    Date of Birth {sortBy === "lastVisit" && (sortOrder === "asc" ? "↑" : "↓")}
                   </TableHead>
                   <TableHead className="h-12 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Status
@@ -411,7 +465,7 @@ export default function PatientsPage() {
                 ) : (
                   patients.slice((currentPage - 1) * limit, currentPage * limit).map((patient, index) => (
                     <TableRow
-                      key={patient.id}
+                      key={patient._id}
                       className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors"
                     >
                       <TableCell className="h-16 px-6">
@@ -420,7 +474,7 @@ export default function PatientsPage() {
                         </div>
                       </TableCell>
                       <TableCell className="h-16 px-6">
-                        <div className="text-gray-900">{patient.age}</div>
+                        <div className="text-gray-900">{new Date(patient.createdAt).toLocaleDateString()}</div>
                       </TableCell>
                       <TableCell className="h-16 px-6">
                         <div className="text-gray-600 capitalize">{patient.gender}</div>
@@ -429,14 +483,14 @@ export default function PatientsPage() {
                         <div className="text-gray-900">{patient.email}</div>
                       </TableCell>
                       <TableCell className="h-16 px-6">
-                        <div className="text-gray-600">{new Date(patient.lastVisit).toLocaleDateString()}</div>
+                        <div className="text-gray-600">{new Date(patient.dateOfBirth).toLocaleDateString()}</div>
                       </TableCell>
                       <TableCell className="h-16 px-6">
                         <Badge
                           variant={patient.isActive ? "default" : "secondary"}
                           className={`${patient.isActive
-                              ? "bg-green-100 text-green-800 hover:bg-green-100"
-                              : "bg-gray-100 text-gray-600 hover:bg-gray-100"
+                            ? "bg-green-100 text-green-800 hover:bg-green-100"
+                            : "bg-gray-100 text-gray-600 hover:bg-gray-100"
                             } font-medium px-3 py-1`}
                         >
                           {patient.isActive ? "Active" : "Inactive"}
@@ -462,7 +516,7 @@ export default function PatientsPage() {
                               Reset Password
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
-                            <DropdownMenuItem onClick={() => togglePatientStatus(patient.id, patient.isActive)}>
+                            <DropdownMenuItem onClick={() => togglePatientStatus(patient._id, patient.isActive)}>
                               {patient.isActive ? "Deactivate" : "Activate"} Patient
                             </DropdownMenuItem>
                           </DropdownMenuContent>
@@ -478,8 +532,8 @@ export default function PatientsPage() {
           {/* Pagination */}
           <div className="flex items-center justify-between space-x-2 py-4">
             <div className="text-sm text-muted-foreground">
-              Showing {(currentPage - 1) * limit + 1} to {Math.min(currentPage * limit, totalPatients)} of{" "}
-              {totalPatients} patients
+              Showing {(currentPage - 1) * limit + 1} to {Math.min(totalPages)} of{" "}
+              {totalPatients} pages
             </div>
             <div className="flex items-center space-x-2">
               <Button
@@ -518,6 +572,137 @@ export default function PatientsPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Add Patient Dialog */}
+      <Dialog open={addPatientDialogOpen} onOpenChange={setAddPatientDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Add New Patient</DialogTitle>
+            <DialogDescription>
+              Fill in the details to add a new patient.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            {/* First Name */}
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="addFirstName" className="text-right">
+                First Name
+              </Label>
+              <Input
+                id="addFirstName"
+                value={addPatientFormData.firstName}
+                onChange={(e) =>
+                  setAddPatientFormData((prev) => ({ ...prev, firstName: e.target.value }))
+                }
+                className="col-span-3"
+                required
+              />
+            </div>
+            {/* Last Name */}
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="addLastName" className="text-right">
+                Last Name
+              </Label>
+              <Input
+                id="addLastName"
+                value={addPatientFormData.lastName}
+                onChange={(e) =>
+                  setAddPatientFormData((prev) => ({ ...prev, lastName: e.target.value }))
+                }
+                className="col-span-3"
+                required
+              />
+            </div>
+            {/* Email */}
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="addEmail" className="text-right">
+                Email
+              </Label>
+              <Input
+                id="addEmail"
+                type="email"
+                value={addPatientFormData.email}
+                onChange={(e) =>
+                  setAddPatientFormData((prev) => ({ ...prev, email: e.target.value }))
+                }
+                className="col-span-3"
+                required
+              />
+            </div>
+            {/* Phone Number */}
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="addPhoneNumber" className="text-right">
+                Phone Number
+              </Label>
+              <Input
+                id="addPhoneNumber"
+                value={addPatientFormData.phoneNumber}
+                onChange={(e) =>
+                  setAddPatientFormData((prev) => ({ ...prev, phoneNumber: e.target.value }))
+                }
+                className="col-span-3"
+              />
+            </div>
+            {/* password */}
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="addPhoneNumber" className="text-right">
+                Password
+              </Label>
+              <Input
+                id="addPassword"
+                type="password"
+                value={addPatientFormData.password}
+                onChange={(e) =>
+                  setAddPatientFormData((prev) => ({ ...prev, password: e.target.value }))
+                }
+                className="col-span-3"
+              />
+            </div>
+            {/* Date of Birth */}
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="addDateOfBirth" className="text-right">
+                Date of Birth
+              </Label>
+              <Input
+                id="addDateOfBirth"
+                type="date" // Use type="date" for a date picker
+                value={addPatientFormData.dateOfBirth}
+                onChange={(e) =>
+                  setAddPatientFormData((prev) => ({ ...prev, dateOfBirth: e.target.value }))
+                }
+                className="col-span-3"
+              />
+            </div>
+            {/* Gender */}
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="addGender" className="text-right">
+                Gender
+              </Label>
+              <Select
+                value={addPatientFormData.gender}
+                onValueChange={(value) =>
+                  setAddPatientFormData((prev) => ({ ...prev, gender: value }))
+                }
+              >
+                <SelectTrigger className="col-span-3">
+                  <SelectValue placeholder="Select Gender" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="male">Male</SelectItem>
+                  <SelectItem value="female">Female</SelectItem>
+                  <SelectItem value="other">Other</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button type="submit" onClick={handleAddPatient}>
+              Add Patient
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
 
       {/* Edit Patient Dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
@@ -560,6 +745,36 @@ export default function PatientsPage() {
                 className="col-span-3"
               />
             </div>
+            {/* Phone Number for Edit Dialog */}
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="editPhoneNumber" className="text-right">
+                Phone
+              </Label>
+              <Input
+                id="editPhoneNumber"
+                value={editFormData.phoneNumber}
+                onChange={(e) =>
+                  setEditFormData((prev) => ({ ...prev, phoneNumber: e.target.value }))
+                }
+                className="col-span-3"
+              />
+            </div>
+
+            {/* Date of Birth for Edit Dialog */}
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="editDateOfBirth" className="text-right">
+                Date of Birth
+              </Label>
+              <Input
+                id="editDateOfBirth"
+                type="date"
+                value={editFormData.dateOfBirth}
+                onChange={(e) =>
+                  setEditFormData((prev) => ({ ...prev, dateOfBirth: e.target.value }))
+                }
+                className="col-span-3"
+              />
+            </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="active" className="text-right">
                 Active
@@ -593,7 +808,7 @@ export default function PatientsPage() {
             <Button variant="outline" onClick={() => setResetPasswordDialogOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={() => selectedPatient && resetPatientPassword(selectedPatient.id)}>Reset Password</Button>
+            <Button onClick={() => selectedPatient && resetPatientPassword(selectedPatient._id)}>Reset Password</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

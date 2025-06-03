@@ -15,6 +15,8 @@ export async function GET(request: NextRequest) {
     const sortOrder = searchParams.get('sortOrder') === 'desc' ? -1 : 1;
     const searchQuery = searchParams.get('search') || '';
     const isActive = searchParams.get('isActive');
+    const gender = searchParams.get('gender');
+
 
     const query: any = { role: 'patient' };
 
@@ -31,6 +33,10 @@ export async function GET(request: NextRequest) {
       query.isActive = isActive === 'true';
     }
 
+    if (gender && gender !== 'all') { // Add gender to query if provided and not 'all'
+      query.gender = gender;
+    }
+
 
     const patients = await User.find(query)
       .sort({ [sort]: sortOrder })
@@ -40,6 +46,8 @@ export async function GET(request: NextRequest) {
     // .lean();
 
     const totalPatients = await User.countDocuments(query);
+
+    console.log()
 
     return NextResponse.json({
       success: true,
