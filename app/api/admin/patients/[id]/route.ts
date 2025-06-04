@@ -3,19 +3,26 @@ import dbConnect from '@/lib/db';
 import User from '@/models/User'; // Using the updated User model
 import mongoose from 'mongoose';
 
-interface Params {
-  id: string;
+// Define the expected shape of the resolved params
+interface ResolvedParams {
+  id: string | string[] | undefined;
+}
+
+// Define the context type for route handlers
+interface RouteContext {
+  params: Promise<ResolvedParams>;
 }
 
 // GET a specific patient by ID
-export async function GET(request: NextRequest, { params }: { params: Params }) {
+export async function GET(request: NextRequest, context: RouteContext) {
   await dbConnect();
-  const resolvedParams = await params;
-  const { id } = resolvedParams;
+  const resolvedParams = await context.params; // Correctly await the promise
+  const idFromParams = resolvedParams.id;
 
-  if (!mongoose.Types.ObjectId.isValid(id)) {
-    return NextResponse.json({ message: 'Invalid patient ID format' }, { status: 400 });
+  if (typeof idFromParams !== 'string' || !mongoose.Types.ObjectId.isValid(idFromParams)) {
+    return NextResponse.json({ message: 'Invalid or missing patient ID format' }, { status: 400 });
   }
+  const id = idFromParams; // id is now a validated string
 
   try {
     const patient = await User.findOne({ _id: id, role: 'patient' });
@@ -29,14 +36,15 @@ export async function GET(request: NextRequest, { params }: { params: Params }) 
 }
 
 // PUT to update a patient by ID
-export async function PUT(request: NextRequest, { params }: { params: Params }) {
+export async function PUT(request: NextRequest, context: RouteContext) {
   await dbConnect();
-  const resolvedParams = await params;
-  const { id } = resolvedParams;
+  const resolvedParams = await context.params; // Correctly await the promise
+  const idFromParams = resolvedParams.id;
 
-  if (!mongoose.Types.ObjectId.isValid(id)) {
-    return NextResponse.json({ message: 'Invalid patient ID format' }, { status: 400 });
+  if (typeof idFromParams !== 'string' || !mongoose.Types.ObjectId.isValid(idFromParams)) {
+    return NextResponse.json({ message: 'Invalid or missing patient ID format' }, { status: 400 });
   }
+  const id = idFromParams; // id is now a validated string
 
   try {
     const body = await request.json();
@@ -80,7 +88,7 @@ export async function PUT(request: NextRequest, { params }: { params: Params }) 
       }
       patientToUpdate.email = email;
       // Consider email verification status if email is changed
-      // patientToUpdate.isEmailVerified = false; 
+      // patientToUpdate.isEmailVerified = false;
     }
     if (phoneNumber) patientToUpdate.phoneNumber = phoneNumber;
     if (address) patientToUpdate.address = address;
@@ -120,14 +128,15 @@ export async function PUT(request: NextRequest, { params }: { params: Params }) 
 }
 
 // DELETE a patient by ID
-export async function DELETE(request: NextRequest, { params }: { params: Params }) {
+export async function DELETE(request: NextRequest, context: RouteContext) {
   await dbConnect();
-  const resolvedParams = await params;
-  const { id } = resolvedParams;
+  const resolvedParams = await context.params; // Correctly await the promise
+  const idFromParams = resolvedParams.id;
 
-  if (!mongoose.Types.ObjectId.isValid(id)) {
-    return NextResponse.json({ message: 'Invalid patient ID format' }, { status: 400 });
+  if (typeof idFromParams !== 'string' || !mongoose.Types.ObjectId.isValid(idFromParams)) {
+    return NextResponse.json({ message: 'Invalid or missing patient ID format' }, { status: 400 });
   }
+  const id = idFromParams; // id is now a validated string
 
   try {
     const patient = await User.findOne({ _id: id, role: 'patient' });

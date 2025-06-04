@@ -3,15 +3,33 @@ import dbConnect from "@/lib/db";
 import User from "@/models/User";
 import mongoose from "mongoose";
 
+// Define the expected shape of the resolved params
+interface ResolvedParams {
+    id: string | string[] | undefined;
+}
+
+// Define the context type for route handlers
+interface RouteContext {
+    params: Promise<ResolvedParams>;
+}
+
 // GET a single doctor by ID
 export async function GET(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    context: RouteContext // Changed to use RouteContext
 ) {
     try {
         await dbConnect();
-        const resolvedParams = await params;
-        const { id } = resolvedParams;
+        const resolvedParams = await context.params; // Await the params
+        const idFromParams = resolvedParams.id;
+
+        if (typeof idFromParams !== 'string') { // Type guard for id
+            return NextResponse.json(
+                { success: false, error: "Doctor ID must be a string." },
+                { status: 400 }
+            );
+        }
+        const id = idFromParams; // id is now confirmed to be a string
 
         if (!id) {
             return NextResponse.json(

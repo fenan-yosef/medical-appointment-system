@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { Bell, Search, Mail, CheckCircle } from "lucide-react" // Added Mail, CheckCircle
@@ -18,19 +18,19 @@ import {
     DropdownMenuGroup, // Added DropdownMenuGroup
 } from "@/components/ui/dropdown-menu"
 import { Badge } from "@/components/ui/badge" // Assuming Badge component exists
-import { useToast } from "@/components/ui/use-toast" // For showing messages
+import { useToast } from "@/hooks/use-toast" // For showing messages
 import { useRouter } from "next/navigation"; // For navigation on link click
 
 
 // Types for Notification
 interface INotification {
-  _id: string;
-  message: string;
-  read: boolean;
-  type?: string;
-  link?: string;
-  createdAt: string; // ISO Date string
-  user: string; // User ID
+    _id: string;
+    message: string;
+    read: boolean;
+    type?: string;
+    link?: string;
+    createdAt: string; // ISO Date string
+    user: string; // User ID
 }
 
 
@@ -88,7 +88,7 @@ export function Header({ user }: HeaderProps) {
             setIsLoadingNotifications(false);
         }
     };
-    
+
     useEffect(() => {
         fetchUnreadCount();
         // Optional: Set up polling for unread count
@@ -232,7 +232,7 @@ export function Header({ user }: HeaderProps) {
                         <DropdownMenuLabel className="flex justify-between items-center">
                             <span>Notifications</span>
                             {notifications.some(n => !n.read) && (
-                                <Button variant="link" size="sm" onClick={(e) => { e.stopPropagation(); handleMarkAllAsRead();}} className="text-xs p-0 h-auto">
+                                <Button variant="link" size="sm" onClick={(e) => { e.stopPropagation(); handleMarkAllAsRead(); }} className="text-xs p-0 h-auto">
                                     Mark all as read
                                 </Button>
                             )}

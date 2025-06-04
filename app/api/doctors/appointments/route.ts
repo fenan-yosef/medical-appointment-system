@@ -2,7 +2,7 @@ import { type NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth/next"
 import dbConnect from "@/lib/db"
 import Appointment from "@/models/Appointment"
-import { authOptions } from "@/app/api/auth/[...nextauth]/route"
+import { authOptions } from "@/lib/auth"
 
 // GET appointments for the logged-in doctor
 export async function GET(request: NextRequest) {

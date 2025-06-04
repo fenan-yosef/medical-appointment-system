@@ -4,22 +4,31 @@ import Notification from '@/models/Notification';
 import { getToken } from 'next-auth/jwt';
 import mongoose from 'mongoose';
 
-interface Params {
-  id: string;
+// Define the expected shape of the resolved params
+interface ResolvedParams {
+  id: string | string[] | undefined;
+}
+
+// Define the context type for route handlers
+interface RouteContext {
+  params: Promise<ResolvedParams>;
 }
 
 // PUT: Mark a specific notification as read
-export async function PUT(request: NextRequest, { params }: { params: Params }) {
+export async function PUT(request: NextRequest, context: RouteContext) {
   const token = await getToken({ req: request });
   if (!token || !token.sub) {
     return NextResponse.json({ message: 'Authentication required' }, { status: 401 });
   }
   const userId = token.sub;
-  const { id: notificationId } = params;
 
-  if (!mongoose.Types.ObjectId.isValid(notificationId)) {
+  const resolvedParams = await context.params;
+  const notificationIdFromParams = resolvedParams.id;
+
+  if (typeof notificationIdFromParams !== 'string' || !mongoose.Types.ObjectId.isValid(notificationIdFromParams)) {
     return NextResponse.json({ message: 'Invalid notification ID format' }, { status: 400 });
   }
+  const notificationId = notificationIdFromParams; // notificationId is now a validated string
 
   await dbConnect();
 

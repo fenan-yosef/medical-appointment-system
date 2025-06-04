@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth/next"
 import bcrypt from "bcryptjs"
 import dbConnect from "@/lib/db"
 import User from "@/models/User"
-import { authOptions } from "@/app/api/auth/[...nextauth]/route"
+import { authOptions } from "@/lib/auth"
 
 // PUT change doctor password
 export async function PUT(request: NextRequest) {

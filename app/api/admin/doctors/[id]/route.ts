@@ -7,9 +7,9 @@ import { getToken } from "next-auth/jwt";
 
 // Define a more explicit type for the context containing params
 interface RouteContext {
-  params: {
-    id: string;
-  };
+  params: Promise<{ // Changed: params is a Promise
+    id: string | string[] | undefined; // Changed: id type matches SegmentParams
+  }>;
 }
 
 // GET handler for fetching a single doctor's profile by ID (Admin)
@@ -17,7 +17,13 @@ export async function GET(request: NextRequest, context: RouteContext) {
   // Await the context or params if Next.js expects it to be a Promise
   // Let's try awaiting context.params first as the error points to params's type.
   const resolvedParams = await context.params;
-  const { id } = resolvedParams; // Destructure id from the resolved params
+  const idFromParams = resolvedParams.id; // idFromParams is string | string[] | undefined
+
+  // Add type validation for idFromParams
+  if (typeof idFromParams !== 'string') {
+    return NextResponse.json({ message: "Invalid or missing doctor ID in route parameters." }, { status: 400 });
+  }
+  const id = idFromParams; // id is now confirmed to be a string
 
   try {
     const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET });
@@ -28,7 +34,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
 
     await connectToDatabase();
 
-    if (!id.match(/^[0-9a-fA-F]{24}$/)) {
+    if (!id.match(/^[0-9a-fA-F]{24}$/)) { // This check can now safely use id as string
       return NextResponse.json({ message: "Invalid doctor ID format." }, { status: 400 });
     }
 
@@ -55,7 +61,13 @@ export async function GET(request: NextRequest, context: RouteContext) {
 export async function PUT(request: NextRequest, context: RouteContext) {
   // Await the context or params
   const resolvedParams = await context.params;
-  const { id } = resolvedParams; // Destructure id from the resolved params
+  const idFromParams = resolvedParams.id; // idFromParams is string | string[] | undefined
+
+  // Add type validation for idFromParams
+  if (typeof idFromParams !== 'string') {
+    return NextResponse.json({ message: "Invalid or missing doctor ID in route parameters." }, { status: 400 });
+  }
+  const id = idFromParams; // id is now confirmed to be a string
 
   try {
     const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET });
@@ -67,7 +79,7 @@ export async function PUT(request: NextRequest, context: RouteContext) {
     await connectToDatabase();
     // const resolvedParams = await params; // This line was from a previous iteration, ensure it's correct based on context.
 
-    if (!id.match(/^[0-9a-fA-F]{24}$/)) {
+    if (!id.match(/^[0-9a-fA-F]{24}$/)) { // This check can now safely use id as string
       return NextResponse.json({ message: "Invalid doctor ID format." }, { status: 400 });
     }
 

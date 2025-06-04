@@ -2,10 +2,21 @@ import { type NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth/next"
 import dbConnect from "@/lib/db"
 import Appointment from "@/models/Appointment"
-import { authOptions } from "@/app/api/auth/[...nextauth]/route"
+import { authOptions } from "@/lib/auth"
+import mongoose from "mongoose"; // Import mongoose
+
+// Define the expected shape of the resolved params
+interface ResolvedParams {
+    id: string | string[] | undefined;
+}
+
+// Define the context type for route handlers
+interface RouteContext {
+    params: Promise<ResolvedParams>;
+}
 
 // GET a specific appointment
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(request: NextRequest, context: RouteContext) {
     try {
         await dbConnect()
         const session = await getServerSession(authOptions)
@@ -14,7 +25,15 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
         }
 
-        const appointment = await Appointment.findById(params.id)
+        const resolvedParams = await context.params;
+        const idFromParams = resolvedParams.id;
+
+        if (typeof idFromParams !== 'string' || !mongoose.Types.ObjectId.isValid(idFromParams)) {
+            return NextResponse.json({ error: "Invalid or missing Appointment ID format" }, { status: 400 });
+        }
+        const id = idFromParams; // id is now a validated string
+
+        const appointment = await Appointment.findById(id)
             .populate("doctor", "firstName lastName email")
             .populate("department", "name")
 
@@ -34,7 +53,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
 }
 
 // PUT update an appointment
-export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(request: NextRequest, context: RouteContext) {
     try {
         await dbConnect()
         const session = await getServerSession(authOptions)
@@ -43,8 +62,16 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
         }
 
+        const resolvedParams = await context.params;
+        const idFromParams = resolvedParams.id;
+
+        if (typeof idFromParams !== 'string' || !mongoose.Types.ObjectId.isValid(idFromParams)) {
+            return NextResponse.json({ error: "Invalid or missing Appointment ID format" }, { status: 400 });
+        }
+        const id = idFromParams; // id is now a validated string
+
         const body = await request.json()
-        const appointment = await Appointment.findById(params.id)
+        const appointment = await Appointment.findById(id)
 
         if (!appointment) {
             return NextResponse.json({ error: "Appointment not found" }, { status: 404 })
@@ -73,7 +100,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
 }
 
 // DELETE cancel an appointment
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(request: NextRequest, context: RouteContext) {
     try {
         await dbConnect()
         const session = await getServerSession(authOptions)
@@ -82,7 +109,15 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
         }
 
-        const appointment = await Appointment.findById(params.id)
+        const resolvedParams = await context.params;
+        const idFromParams = resolvedParams.id;
+
+        if (typeof idFromParams !== 'string' || !mongoose.Types.ObjectId.isValid(idFromParams)) {
+            return NextResponse.json({ error: "Invalid or missing Appointment ID format" }, { status: 400 });
+        }
+        const id = idFromParams; // id is now a validated string
+
+        const appointment = await Appointment.findById(id)
 
         if (!appointment) {
             return NextResponse.json({ error: "Appointment not found" }, { status: 404 })

@@ -5,7 +5,7 @@ import User from "@/models/User"
 import Appointment from "@/models/Appointment"
 import Service from "@/models/Service"
 import Department from "@/models/Department"
-import { authOptions } from "@/app/api/auth/[...nextauth]/route"
+import { authOptions } from "@/lib/auth"
 
 // GET dashboard statistics
 export async function GET(request: NextRequest) {

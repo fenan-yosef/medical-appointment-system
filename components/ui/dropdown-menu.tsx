@@ -1,3 +1,5 @@
+// components/ui/dropdown-menu.tsx
+
 "use client";
 
 import * as React from "react";
@@ -7,6 +9,9 @@ import { cn } from "@/lib/utils";
 export const DropdownMenu = DropdownMenuPrimitive.Root;
 
 export const DropdownMenuTrigger = DropdownMenuPrimitive.Trigger;
+
+// Add this export for DropdownMenuGroup
+export const DropdownMenuGroup = DropdownMenuPrimitive.Group; // <--- ADD THIS LINE
 
 export const DropdownMenuContent = React.forwardRef<
     React.ElementRef<typeof DropdownMenuPrimitive.Content>,

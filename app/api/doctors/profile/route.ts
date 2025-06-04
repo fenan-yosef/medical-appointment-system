@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth/next"
 import dbConnect from "@/lib/db"
 import User from "@/models/User"
 import DoctorAvailability from "@/models/DoctorAvailability"
-import { authOptions } from "@/app/api/auth/[...nextauth]/route"
+import { authOptions } from "@/lib/auth"
 
 // GET doctor profile
 export async function GET(request: NextRequest) {
