@@ -23,12 +23,23 @@ export const authOptions: NextAuthOptions = {
                         return null;
                     }
 
+                    console.log(`Attempting to authorize user: ${credentials.email}`); // Log email
+
                     const user = (await User.findOne({ email: credentials.email })
                         .select("+password")
                         .lean()) as any;
 
                     if (!user) {
-                        console.log("No user found with this email");
+                        console.log(`No user found with email: ${credentials.email}`);
+                        return null;
+                    }
+
+                    // Log information about the passwords for debugging
+                    console.log(`Provided password type: ${typeof credentials.password}, length: ${credentials.password.length}`);
+                    if (user.password) {
+                        console.log(`Stored password hash (first 10 chars): ${user.password.substring(0, 10)}, length: ${user.password.length}`);
+                    } else {
+                        console.log("Stored password hash is missing from user object.");
                         return null;
                     }
 
@@ -38,10 +49,11 @@ export const authOptions: NextAuthOptions = {
                     );
 
                     if (!isValid) {
-                        console.log("Invalid password");
+                        console.log(`Password comparison failed for user: ${credentials.email}. Provided password did not match stored hash.`);
                         return null;
                     }
 
+                    console.log(`User ${credentials.email} authorized successfully.`);
                     return {
                         id: user._id.toString(),
                         email: user.email,

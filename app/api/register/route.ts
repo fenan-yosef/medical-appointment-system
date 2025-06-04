@@ -4,12 +4,12 @@ import User from "@/models/User"
 
 export async function POST(req: NextRequest) {
     try {
-        const { 
-            firstName, 
-            lastName, 
-            email, 
-            password, 
-            gender, 
+        const {
+            firstName,
+            lastName,
+            email,
+            password,
+            gender,
             role,
             phoneNumber,
             address, // { street, city, state, zipCode, country }
@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
             firstName,
             lastName,
             email,
-            password, // Will be hashed by the pre-save hook
+            password, // Ensure this is hashed by the pre-save hook
             gender,
             role: role || "patient", // Default to patient if no role provided
             phoneNumber,
@@ -51,6 +51,7 @@ export async function POST(req: NextRequest) {
         const newUser = user.toObject()
         delete newUser.password
 
+        console.log(`User registered successfully: ${email}`) // Log registration success
         return NextResponse.json({ message: "User registered successfully", user: newUser }, { status: 201 })
     } catch (error: any) {
         console.error("Registration error:", error)
