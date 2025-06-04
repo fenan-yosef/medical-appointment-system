@@ -14,8 +14,10 @@ interface RouteContext {
 
 // GET handler for fetching a single doctor's profile by ID (Admin)
 export async function GET(request: NextRequest, context: RouteContext) {
-  const { params } = context; // Destructure params from context
-  const { id } = params; // Destructure id from params
+  // Await the context or params if Next.js expects it to be a Promise
+  // Let's try awaiting context.params first as the error points to params's type.
+  const resolvedParams = await context.params;
+  const { id } = resolvedParams; // Destructure id from the resolved params
 
   try {
     const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET });
@@ -44,15 +46,16 @@ export async function GET(request: NextRequest, context: RouteContext) {
 
     return NextResponse.json({ message: "Doctor profile fetched successfully.", doctor }, { status: 200 });
   } catch (error: any) {
-    console.error(`Error fetching doctor ${params.id} (admin):`, error);
+    console.error(`Error fetching doctor ${id} (admin):`, error); // Use the resolved id
     return NextResponse.json({ message: error.message || "Internal server error" }, { status: 500 });
   }
 }
 
 // PUT handler for updating a doctor's profile (Admin)
 export async function PUT(request: NextRequest, context: RouteContext) {
-  const { params } = context; // Destructure params from context
-  const { id } = params; // Destructure id from params
+  // Await the context or params
+  const resolvedParams = await context.params;
+  const { id } = resolvedParams; // Destructure id from the resolved params
 
   try {
     const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET });
@@ -62,7 +65,7 @@ export async function PUT(request: NextRequest, context: RouteContext) {
     }
 
     await connectToDatabase();
-    const resolvedParams = await params;
+    // const resolvedParams = await params; // This line was from a previous iteration, ensure it's correct based on context.
 
     if (!id.match(/^[0-9a-fA-F]{24}$/)) {
       return NextResponse.json({ message: "Invalid doctor ID format." }, { status: 400 });
@@ -91,16 +94,12 @@ export async function PUT(request: NextRequest, context: RouteContext) {
       licenseNumber,
       department, // Department ID
       isActive,
-      // Note: 'password' should not be updatable here
-      // 'role' should not be updatable here to prevent role escalation/change via this specific route
     } = body;
 
-    // Fields to update
     const updateFields: any = {};
     if (firstName !== undefined) updateFields.firstName = firstName;
     if (lastName !== undefined) updateFields.lastName = lastName;
     if (email !== undefined) {
-      // Add email validation if necessary, e.g., check format or if it's already taken by another user
       const existingUserWithEmail = await User.findOne({ email: email, _id: { $ne: id } });
       if (existingUserWithEmail) {
         return NextResponse.json({ message: "Email is already in use by another user." }, { status: 409 });
@@ -118,7 +117,7 @@ export async function PUT(request: NextRequest, context: RouteContext) {
     if (isActive !== undefined) updateFields.isActive = isActive;
 
     if (department !== undefined) {
-      if (department === null || department === "") { // Allow unsetting department
+      if (department === null || department === "") {
         updateFields.department = null;
       } else if (!department.match(/^[0-9a-fA-F]{24}$/)) {
         return NextResponse.json({ message: "Invalid department ID format." }, { status: 400 });
@@ -131,15 +130,14 @@ export async function PUT(request: NextRequest, context: RouteContext) {
       }
     }
 
-    // Update timestamp
     updateFields.updatedAt = new Date();
 
     const updatedDoctor = await User.findByIdAndUpdate(
       id,
       { $set: updateFields },
-      { new: true, runValidators: true, context: 'query' } // Return updated doc, run schema validators
+      { new: true, runValidators: true, context: 'query' }
     )
-      .select("-password") // Exclude password from response
+      .select("-password")
       .populate({ path: "department", model: Department, select: "name" });
 
     if (!updatedDoctor) {
@@ -148,7 +146,7 @@ export async function PUT(request: NextRequest, context: RouteContext) {
 
     return NextResponse.json({ message: "Doctor profile updated successfully.", doctor: updatedDoctor }, { status: 200 });
   } catch (error: any) {
-    console.error(`Error updating doctor ${params.id} (admin):`, error);
+    console.error(`Error updating doctor ${id} (admin):`, error); // Use the resolved id
     if (error.name === "ValidationError") {
       return NextResponse.json({ message: "Validation Error", errors: error.errors }, { status: 400 });
     }

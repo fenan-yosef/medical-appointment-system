@@ -10,7 +10,8 @@ export async function GET(
 ) {
     try {
         await dbConnect();
-        const { id } = params;
+        const resolvedParams = await params;
+        const { id } = resolvedParams;
 
         if (!id) {
             return NextResponse.json(

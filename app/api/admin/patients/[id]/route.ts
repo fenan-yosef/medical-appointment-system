@@ -10,7 +10,8 @@ interface Params {
 // GET a specific patient by ID
 export async function GET(request: NextRequest, { params }: { params: Params }) {
   await dbConnect();
-  const { id } = params;
+  const resolvedParams = await params;
+  const { id } = resolvedParams;
 
   if (!mongoose.Types.ObjectId.isValid(id)) {
     return NextResponse.json({ message: 'Invalid patient ID format' }, { status: 400 });
@@ -121,7 +122,8 @@ export async function PUT(request: NextRequest, { params }: { params: Params }) 
 // DELETE a patient by ID
 export async function DELETE(request: NextRequest, { params }: { params: Params }) {
   await dbConnect();
-  const { id } = params;
+  const resolvedParams = await params;
+  const { id } = resolvedParams;
 
   if (!mongoose.Types.ObjectId.isValid(id)) {
     return NextResponse.json({ message: 'Invalid patient ID format' }, { status: 400 });
