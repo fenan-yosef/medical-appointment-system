@@ -89,6 +89,7 @@ export default function ServicesPage() {
   const [services, setServices] = useState<Service[]>([])
   const [departments, setDepartments] = useState<Department[]>([])
   const [loading, setLoading] = useState(true)
+  const [unauthorized, setUnauthorized] = useState(false) // New state for unauthorized status
   const [searchTerm, setSearchTerm] = useState("")
   const [departmentFilter, setDepartmentFilter] = useState<string>("all")
   const [sortBy, setSortBy] = useState("name")
@@ -110,25 +111,10 @@ export default function ServicesPage() {
 
   const limit = 10
 
-  // Fetch departments
-  const fetchDepartments = async () => {
-    try {
-      const response = await fetch("/api/departments")
-      const data = await response.json()
-
-      if (response.ok) {
-        setDepartments(data.departments || [])
-      } else {
-        throw new Error(data.message || "Failed to fetch departments")
-      }
-    } catch (error) {
-      console.error("Error fetching departments:", error)
-    }
-  }
-
   // Fetch services
   const fetchServices = async () => {
     setLoading(true)
+    setUnauthorized(false) // Reset unauthorized state before fetching
     try {
       const params = new URLSearchParams({
         page: currentPage.toString(),
@@ -146,6 +132,12 @@ export default function ServicesPage() {
       }
 
       const response = await fetch(`/api/admin/services?${params}`)
+
+      if (response.status === 403) {
+        setUnauthorized(true) // Set unauthorized state if 403 is returned
+        return
+      }
+
       const data: ServicesResponse = await response.json()
 
       if (data.success) {
@@ -164,10 +156,6 @@ export default function ServicesPage() {
       setLoading(false)
     }
   }
-
-  useEffect(() => {
-    fetchDepartments()
-  }, [])
 
   useEffect(() => {
     fetchServices()
@@ -315,6 +303,13 @@ export default function ServicesPage() {
   return (
     <div className="min-h-screen bg-gray-50/50">
       <div className="flex-1 space-y-8 p-8 pt-6">
+        {/* Unauthorized Message */}
+        {unauthorized && (
+          <div className="p-4 bg-red-100 text-red-700 border border-red-300 rounded">
+            You are not authorized to view this page.
+          </div>
+        )}
+
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>

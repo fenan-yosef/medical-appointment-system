@@ -1,4 +1,4 @@
-import { middleware } from './middleware'; // Adjust path if necessary
+import { middleware } from '../middleware'; // Adjust path if necessary
 import { NextRequest, NextResponse } from 'next/server';
 import { getToken } from 'next-auth/jwt';
 
@@ -43,7 +43,7 @@ describe('Middleware Authorization Logic', () => {
             expect(response?.status).toBe(307);
             expect(response?.headers.get('location')).toBe('http://localhost/login');
         });
-         it('should redirect to /login if no token and accessing /dashboard', async () => {
+        it('should redirect to /login if no token and accessing /dashboard', async () => {
             mockGetToken.mockResolvedValue(null);
             req = createMockRequest('/dashboard');
             const response = await middleware(req);
@@ -107,8 +107,8 @@ describe('Middleware Authorization Logic', () => {
             // For middleware, if it doesn't return a NextResponse object, it means it passed through.
             // Or, it could return a basic NextResponse with no specific redirect/rewrite.
             // Checking that it's not a redirect is the primary goal.
-             expect(response?.status).not.toBe(307);
-             expect(response?.headers.get('location')).toBeNull(); // Or not one of the redirect paths
+            expect(response?.status).not.toBe(307);
+            expect(response?.headers.get('location')).toBeNull(); // Or not one of the redirect paths
         });
 
         it('should allow patient access to /dashboard/patient and return NextResponse.next()', async () => {

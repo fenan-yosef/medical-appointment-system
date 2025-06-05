@@ -28,9 +28,9 @@ export async function GET(request: NextRequest, context: RouteContext) {
   try {
     const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET });
     // @ts-ignore
-    // if (!token || token.role !== "admin") {
-    //   return NextResponse.json({ message: "Unauthorized: Access restricted to admins." }, { status: 403 });
-    // }
+    if (!token || token.role !== "admin") {
+      return NextResponse.json({ message: "Unauthorized: Access restricted to admins." }, { status: 403 });
+    }
 
     await connectToDatabase();
 
@@ -72,9 +72,9 @@ export async function PUT(request: NextRequest, context: RouteContext) {
   try {
     const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET });
     // @ts-ignore
-    // if (!token || token.role !== "admin") {
-    //   return NextResponse.json({ message: "Unauthorized: Access restricted to admins." }, { status: 403 });
-    // }
+    if (!token || token.role !== "admin") {
+      return NextResponse.json({ message: "Unauthorized: Access restricted to admins." }, { status: 403 });
+    }
 
     await connectToDatabase();
     // const resolvedParams = await params; // This line was from a previous iteration, ensure it's correct based on context.

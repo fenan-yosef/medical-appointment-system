@@ -2,11 +2,19 @@ import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/db';
 import Service from '@/models/Service';
 import Department from '@/models/Department'; // Assuming Department model exists
+import { getToken } from 'next-auth/jwt';
 
 export async function GET(request: NextRequest) {
   await dbConnect();
 
   try {
+    const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET });
+    // @ts-ignore
+    if (!token || token.role !== "admin") {
+      console.log("Unauthorized access attempt to admin services route.");
+      return NextResponse.json({ message: "Unauthorized: Access restricted to admins." }, { status: 403 });
+    }
+
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get('page') || '1', 10);
     const limit = parseInt(searchParams.get('limit') || '10', 10);

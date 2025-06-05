@@ -9,9 +9,9 @@ export async function GET(req: NextRequest) {
   try {
     const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
     // @ts-ignore
-    // if (!token || token.role !== "admin") {
-    //   return NextResponse.json({ message: "Unauthorized: Access restricted to admins." }, { status: 403 });
-    // }
+    if (!token || token.role !== "admin") {
+      return NextResponse.json({ message: "Unauthorized: Access restricted to admins." }, { status: 403 });
+    }
 
     await connectToDatabase();
 
