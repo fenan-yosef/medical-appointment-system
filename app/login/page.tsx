@@ -71,17 +71,17 @@ export default function LoginPage() {
             {/* Left side - Login Form */}
             <div className="flex w-full flex-col justify-center px-8 md:w-1/2 md:px-16 lg:px-24">
                 <div className="mx-auto w-full max-w-md">
-                    <div className="mb-6">
+                    {/* <div className="mb-6">
                         <div className="flex h-12 w-12 items-center justify-center rounded-md bg-blue-100 text-blue-600">
                             <div className="relative h-8 w-8">
                                 <User className="absolute" size={16} strokeWidth={2} />
                                 <Plus className="absolute right-0 top-0 h-4 w-4" strokeWidth={2} />
                             </div>
                         </div>
-                    </div>
+                    </div> */}
 
                     <h1 className="text-3xl font-bold text-gray-900">Login</h1>
-                    <p className="mt-2 text-gray-600">Welcome Back to Momona Tech!</p>
+                    <p className="mt-2 text-gray-600">Welcome Back to SDLB Tech!</p>
 
                     {error && (
                         <Alert variant="destructive" className="mt-4">
@@ -140,7 +140,7 @@ export default function LoginPage() {
                     <p className="mt-6 text-center text-sm text-gray-600">
                         Don&apos;t you have an account?{" "}
                         <Link href="/register" className="font-medium text-blue-600 hover:text-blue-500">
-                            SignUp
+                            Book Appointment
                         </Link>
                     </p>
                     <DebugInfo />
@@ -150,29 +150,46 @@ export default function LoginPage() {
             {/* Right side - Image */}
             <div className="hidden relative md:block md:w-1/2 bg-blue-900">
                 <div className="absolute inset-0 bg-gradient-to-br from-blue-800/80 to-blue-900/90 z-10"></div>
-                <Image
+                {/* <Image
                     src="https://picsum.photos/id/1027/1200/1800"
                     alt="Healthcare professional"
                     fill
                     sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                     className="object-cover"
                     priority
+                /> */}
+                <Image
+                    // src="https://picsum.photos/id/1040/1200/1800"
+                    src="/registration-image.png"
+                    alt="Healthcare registration"
+                    fill
+                    // sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                    className="object-cover"
+                    priority
                 />
                 <div className="absolute inset-0 z-20 flex items-center justify-center">
-                    <div className="max-w-md p-8 text-white">
-                        <div className="relative h-32 w-32 mx-auto mb-8 opacity-80">
-                            <div className="absolute inset-0 rounded-xl bg-blue-200/30 backdrop-blur-sm"></div>
-                            <div className="absolute inset-0 flex items-center justify-center">
-                                <Plus className="h-16 w-16 text-blue-200" />
+                    <div className="absolute inset-0 z-20 flex items-center justify-center">
+                        <div className="max-w-md p-8 text-white text-center">
+                            <div className="relative h-32 w-32 mx-auto mb-8 opacity-80">
+                                <div className="absolute inset-0 rounded-xl bg-blue-200/30 backdrop-blur-sm"></div>
+                                <div className="absolute inset-0 flex items-center justify-center">
+                                    <Plus className="h-16 w-16 text-blue-200" />
+                                </div>
                             </div>
-                        </div>
-                        <div className="relative h-24 w-24 mx-auto mb-8 opacity-60">
-                            <div className="absolute inset-0 rounded-xl bg-blue-200/20 backdrop-blur-sm"></div>
-                            <div className="absolute inset-0 flex items-center justify-center">
-                                <User className="h-12 w-12 text-blue-200" />
+                            <h2 className="text-2xl font-bold mb-4">Welcome to Healthcare</h2>
+                            <p className="text-blue-100 leading-relaxed">
+                                Join thousands of patients who trust our platform for their healthcare needs. Experience seamless
+                                appointment booking and comprehensive medical care.
+                            </p>
+                            <div className="relative h-24 w-24 mx-auto mt-8 opacity-60">
+                                <div className="absolute inset-0 rounded-xl bg-blue-200/20 backdrop-blur-sm"></div>
+                                <div className="absolute inset-0 flex items-center justify-center">
+                                    <User className="h-12 w-12 text-blue-200" />
+                                </div>
                             </div>
                         </div>
                     </div>
+
                 </div>
             </div>
         </div>

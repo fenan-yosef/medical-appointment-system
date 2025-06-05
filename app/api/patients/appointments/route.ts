@@ -25,8 +25,11 @@ export async function GET(request: NextRequest) {
 
     // Filter by status
     if (status === "upcoming") {
-      query.date = { $gte: new Date() }
-      query.status = { $nin: ["cancelled", "completed"] }
+      const now = new Date();
+      now.setHours(0, 0, 0, 0); // Set time to the beginning of the day
+
+      query.date = { $gte: now };
+      query.status = { $nin: ["cancelled", "completed"] };
     } else if (status === "past") {
       query.$or = [{ date: { $lt: new Date() } }, { status: { $in: ["cancelled", "completed"] } }]
     }

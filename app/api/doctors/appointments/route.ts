@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth/next"
 import dbConnect from "@/lib/db"
 import Appointment from "@/models/Appointment"
+import Department from "@/models/Department"
 import { authOptions } from "@/lib/auth"
 
 // GET appointments for the logged-in doctor
@@ -29,7 +30,11 @@ export async function GET(request: NextRequest) {
         if (status && status !== "all") {
             if (status === "upcoming") {
                 query.date = { $gte: new Date() }
-                query.status = { $nin: ["cancelled", "completed", "no-show"] }
+                query.status = "scheduled" // Only show scheduled appointments in upcoming
+            } else if (status === "completed") {
+                query.status = "completed"
+            } else if (status === "cancelled") {
+                query.status = "cancelled"
             } else if (status === "past") {
                 query.$or = [{ date: { $lt: new Date() } }, { status: { $in: ["cancelled", "completed", "no-show"] } }]
             } else {
@@ -85,6 +90,7 @@ export async function GET(request: NextRequest) {
             },
         })
     } catch (error: any) {
+        console.error("Error fetching appointments for doctor:", error)
         return NextResponse.json({ error: error.message }, { status: 500 })
     }
 }

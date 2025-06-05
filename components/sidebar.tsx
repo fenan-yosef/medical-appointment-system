@@ -109,7 +109,7 @@ const doctorNavItems: NavItem[] = [
 
 const patientNavItems: NavItem[] = [
     {
-        name: "Appontments",
+        name: "Appointments",
         href: "/dashboard/patient",
         icon: LayoutDashboard,
     },

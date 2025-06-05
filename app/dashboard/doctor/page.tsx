@@ -134,6 +134,8 @@ export default function DoctorDashboard() {
             const response = await fetch(`/api/doctors/appointments?${params}`)
             const data = await response.json()
 
+            console.log("Fetched appointments:", data)
+
             if (data.success) {
                 setAppointments(data.data)
                 setStats(data.stats)
@@ -158,15 +160,15 @@ export default function DoctorDashboard() {
     const getStatusForTab = (tab: string) => {
         switch (tab) {
             case "today":
-                return "all"
+                return "all"; // Or perhaps a specific status like "scheduled" if you only want scheduled appointments for today
             case "upcoming":
-                return "upcoming"
+                return "scheduled"; // Only fetch scheduled appointments for upcoming
             case "completed":
-                return "completed"
+                return "completed";
             case "cancelled":
-                return "cancelled"
+                return "cancelled";
             default:
-                return "all"
+                return "all";
         }
     }
 
@@ -323,7 +325,7 @@ export default function DoctorDashboard() {
                         <div className="flex items-center">
                             <Bell className="h-8 w-8 text-orange-600" />
                             <div className="ml-4">
-                                <p className="text-sm font-medium text-gray-600">Notifications</p>
+                                <p className="text-sm font-medium text-gray-600">Total</p>
                                 <p className="text-2xl font-bold">3</p>
                             </div>
                         </div>
@@ -363,20 +365,20 @@ export default function DoctorDashboard() {
                             <TabsTrigger value="cancelled">Cancelled</TabsTrigger>
                         </TabsList>
 
-                        <TabsContent value={activeTab}>
-                            {loading ? (
-                                <div className="space-y-4">
-                                    {[1, 2, 3].map((i) => (
-                                        <div key={i} className="animate-pulse">
-                                            <div className="h-24 bg-gray-200 rounded"></div>
-                                        </div>
-                                    ))}
-                                </div>
-                            ) : appointments.length === 0 ? (
-                                <div className="text-center py-12">
-                                    <p className="text-gray-500">No appointments found</p>
-                                </div>
-                            ) : (
+                        {loading ? (
+                            <div className="space-y-4">
+                                {[1, 2, 3].map((i) => (
+                                    <div key={i} className="animate-pulse">
+                                        <div className="h-24 bg-gray-200 rounded"></div>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : appointments.length === 0 ? (
+                            <div className="text-center py-12">
+                                <p className="text-gray-500">No appointments found</p>
+                            </div>
+                        ) : (
+                            <TabsContent value={activeTab}>
                                 <div className="space-y-4">
                                     {appointments.map((appointment) => (
                                         <Card key={appointment._id} className="hover:shadow-md transition-shadow">
@@ -384,13 +386,13 @@ export default function DoctorDashboard() {
                                                 <div className="flex items-center justify-between">
                                                     <div className="flex items-center space-x-4">
                                                         <AvatarComponent
-                                                            firstName={appointment.patient.firstName}
-                                                            lastName={appointment.patient.lastName}
+                                                            firstName={appointment.patient?.firstName || "unknown"}
+                                                            lastName={appointment.patient?.lastName || "patient"}
                                                             size="lg"
                                                         />
                                                         <div>
                                                             <h3 className="font-semibold text-lg">
-                                                                {appointment.patient.firstName} {appointment.patient.lastName}
+                                                                {appointment.patient?.firstName} {appointment.patient?.lastName}
                                                             </h3>
                                                             <div className="flex items-center space-x-4 text-sm text-gray-600 mt-1">
                                                                 <div className="flex items-center">
@@ -401,10 +403,10 @@ export default function DoctorDashboard() {
                                                                     <Clock className="h-4 w-4 mr-1" />
                                                                     {formatTime(appointment.time.start)}
                                                                 </div>
-                                                                {appointment.patient.phone && (
+                                                                {appointment.patient?.phone && (
                                                                     <div className="flex items-center">
                                                                         <Phone className="h-4 w-4 mr-1" />
-                                                                        {appointment.patient.phone}
+                                                                        {appointment.patient?.phone}
                                                                     </div>
                                                                 )}
                                                             </div>
@@ -458,8 +460,8 @@ export default function DoctorDashboard() {
                                         </Card>
                                     ))}
                                 </div>
-                            )}
-                        </TabsContent>
+                            </TabsContent>
+                        )}
                     </Tabs>
                 </CardContent>
             </Card>
@@ -474,13 +476,13 @@ export default function DoctorDashboard() {
                         <div className="space-y-4">
                             <div className="flex items-center space-x-4">
                                 <AvatarComponent
-                                    firstName={selectedAppointment.patient.firstName}
-                                    lastName={selectedAppointment.patient.lastName}
+                                    firstName={selectedAppointment.patient?.firstName}
+                                    lastName={selectedAppointment.patient?.lastName}
                                     size="xl"
                                 />
                                 <div>
                                     <h3 className="text-xl font-semibold">
-                                        {selectedAppointment.patient.firstName} {selectedAppointment.patient.lastName}
+                                        {selectedAppointment.patient?.firstName} {selectedAppointment.patient?.lastName}
                                     </h3>
                                     <p className="text-gray-600">{selectedAppointment.department.name}</p>
                                 </div>
@@ -491,15 +493,15 @@ export default function DoctorDashboard() {
                                     <Label className="text-sm font-medium text-gray-500">Email</Label>
                                     <div className="flex items-center mt-1">
                                         <Mail className="h-4 w-4 mr-2 text-gray-400" />
-                                        <span>{selectedAppointment.patient.email}</span>
+                                        <span>{selectedAppointment.patient?.email}</span>
                                     </div>
                                 </div>
-                                {selectedAppointment.patient.phone && (
+                                {selectedAppointment.patient?.phone && (
                                     <div>
                                         <Label className="text-sm font-medium text-gray-500">Phone</Label>
                                         <div className="flex items-center mt-1">
                                             <Phone className="h-4 w-4 mr-2 text-gray-400" />
-                                            <span>{selectedAppointment.patient.phone}</span>
+                                            <span>{selectedAppointment.patient?.phone}</span>
                                         </div>
                                     </div>
                                 )}
